@@ -16,6 +16,9 @@ departments/legal/archive/
 # Node
 node_modules/
 
+# Test coverage
+coverage/
+
 # OS
 .DS_Store
 Thumbs.db
