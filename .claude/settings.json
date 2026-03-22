@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "language": "zh-TW",
   "alwaysThinkingEnabled": true,
   "permissions": {
@@ -27,7 +26,7 @@
           },
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; if [[ \"$f\" =~ \\.(js|ts)$ ]] && [ -f \"$f\" ]; then grep -nE '(password|api_?key|secret)\\s*=\\s*[\"'\"'\"'][^\"'\"'\"']+[\"'\"'\"']' \"$f\" && echo \"⚠️ 潛在安全問題: $f\" || echo \"✅ 安全檢查通過: $f\"; fi; }",
+            "command": "bash .claude/security-scan.sh",
             "statusMessage": "🔒 執行安全檢查...",
             "timeout": 20
           }

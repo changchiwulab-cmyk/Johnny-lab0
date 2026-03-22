@@ -1,5 +1,4 @@
 // Security check test - checking for vulnerabilities
-const crypto = require('crypto')
 
 // Simulate checking for hardcoded secrets
 function checkSecurityIssues(code) {
