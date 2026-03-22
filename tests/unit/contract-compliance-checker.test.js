@@ -155,24 +155,158 @@ describe('ContractComplianceChecker', () => {
     });
   });
 
+  describe('checkSLACompliance()', () => {
+    it('should flag when SLO not defined', () => {
+      const terms = { basic_info: {} };
+      const issues = checker.checkSLACompliance(terms);
+      const sloIssue = issues.find((i) => i.check_id === 'COMP-012');
+      expect(sloIssue).toBeDefined();
+      expect(sloIssue.severity).toBe('HIGH');
+      expect(sloIssue.category).toBe('sla_requirements');
+    });
+
+    it('should not flag SLO when service level terms exist', () => {
+      const terms = { 'service level': '99.9% uptime SLO defined' };
+      const issues = checker.checkSLACompliance(terms);
+      const sloIssue = issues.find((i) => i.check_id === 'COMP-012');
+      expect(sloIssue).toBeUndefined();
+    });
+
+    it('should flag when SLA breach remedies not specified', () => {
+      const terms = { 'service level': 'SLO defined' };
+      const issues = checker.checkSLACompliance(terms);
+      const remedyIssue = issues.find((i) => i.check_id === 'COMP-013');
+      expect(remedyIssue).toBeDefined();
+      expect(remedyIssue.severity).toBe('MEDIUM');
+      expect(remedyIssue.category).toBe('sla_remedies');
+    });
+
+    it('should not flag remedies when penalty/credit exists', () => {
+      const terms = { 'service level': 'SLO defined', penalty: 'credit issued' };
+      const issues = checker.checkSLACompliance(terms);
+      const remedyIssue = issues.find((i) => i.check_id === 'COMP-013');
+      expect(remedyIssue).toBeUndefined();
+    });
+
+    it('should return empty when all SLA requirements met', () => {
+      const terms = {
+        'service level': '99.9% uptime SLO',
+        penalty: 'service credit for downtime',
+      };
+      const issues = checker.checkSLACompliance(terms);
+      expect(issues).toEqual([]);
+    });
+  });
+
+  describe('checkNDACompliance()', () => {
+    it('should flag when confidential information not defined', () => {
+      const terms = { basic_info: {} };
+      const issues = checker.checkNDACompliance(terms);
+      const defIssue = issues.find((i) => i.check_id === 'COMP-014');
+      expect(defIssue).toBeDefined();
+      expect(defIssue.severity).toBe('MEDIUM');
+      expect(defIssue.category).toBe('nda_definition');
+    });
+
+    it('should not flag when confidential information is defined', () => {
+      const terms = { 'confidential information': 'means all non-public data', proprietary: 'info' };
+      const issues = checker.checkNDACompliance(terms);
+      const defIssue = issues.find((i) => i.check_id === 'COMP-014');
+      expect(defIssue).toBeUndefined();
+    });
+
+    it('should flag when permitted use not restricted', () => {
+      const terms = { 'confidential information': 'defined' };
+      const issues = checker.checkNDACompliance(terms);
+      const useIssue = issues.find((i) => i.check_id === 'COMP-015');
+      expect(useIssue).toBeDefined();
+      expect(useIssue.severity).toBe('MEDIUM');
+      expect(useIssue.category).toBe('nda_permitted_use');
+    });
+
+    it('should not flag when permitted use is restricted', () => {
+      const terms = {
+        'confidential information': 'defined',
+        'permitted use': 'limited to evaluation purpose',
+      };
+      const issues = checker.checkNDACompliance(terms);
+      const useIssue = issues.find((i) => i.check_id === 'COMP-015');
+      expect(useIssue).toBeUndefined();
+    });
+
+    it('should return empty when all NDA requirements met', () => {
+      const terms = {
+        'confidential information': 'means all proprietary data',
+        'permitted use': 'limited to evaluation purpose only',
+        authorization: 'required',
+      };
+      const issues = checker.checkNDACompliance(terms);
+      expect(issues).toEqual([]);
+    });
+  });
+
+  describe('checkPurchaseCompliance()', () => {
+    it('should flag when warranty not specified', () => {
+      const terms = { basic_info: {} };
+      const issues = checker.checkPurchaseCompliance(terms);
+      const warrantyIssue = issues.find((i) => i.check_id === 'COMP-016');
+      expect(warrantyIssue).toBeDefined();
+      expect(warrantyIssue.severity).toBe('MEDIUM');
+      expect(warrantyIssue.category).toBe('purchase_warranty');
+    });
+
+    it('should not flag when warranty exists', () => {
+      const terms = { warranty: '12 months parts and labor' };
+      const issues = checker.checkPurchaseCompliance(terms);
+      const warrantyIssue = issues.find((i) => i.check_id === 'COMP-016');
+      expect(warrantyIssue).toBeUndefined();
+    });
+
+    it('should flag when delivery/payment terms missing', () => {
+      const terms = { warranty: 'provided' };
+      const issues = checker.checkPurchaseCompliance(terms);
+      const deliveryIssue = issues.find((i) => i.check_id === 'COMP-017');
+      expect(deliveryIssue).toBeDefined();
+      expect(deliveryIssue.severity).toBe('MEDIUM');
+      expect(deliveryIssue.category).toBe('purchase_terms');
+    });
+
+    it('should not flag when delivery terms exist', () => {
+      const terms = { warranty: 'provided', delivery: 'FOB destination', payment: 'Net 30' };
+      const issues = checker.checkPurchaseCompliance(terms);
+      const deliveryIssue = issues.find((i) => i.check_id === 'COMP-017');
+      expect(deliveryIssue).toBeUndefined();
+    });
+
+    it('should return empty when all purchase requirements met', () => {
+      const terms = {
+        warranty: '12 months guarantee',
+        delivery: 'FOB destination within 14 days',
+        invoice: 'Net 30 payment terms',
+      };
+      const issues = checker.checkPurchaseCompliance(terms);
+      expect(issues).toEqual([]);
+    });
+  });
+
   describe('checkIndustrySpecificCompliance()', () => {
     it('should check SLA compliance for SLA contracts', () => {
       const terms = { metadata: { contract_type: 'SLA' } };
       const issues = checker.checkIndustrySpecificCompliance(terms, 'California');
-      expect(issues.length).toBeGreaterThan(0);
+      expect(issues.some((i) => i.check_id === 'COMP-012')).toBe(true);
       expect(issues.some((i) => i.category === 'sla_requirements')).toBe(true);
     });
 
     it('should check NDA compliance for NDA contracts', () => {
       const terms = { metadata: { contract_type: 'NDA' } };
       const issues = checker.checkIndustrySpecificCompliance(terms, 'California');
-      expect(issues.length).toBeGreaterThan(0);
+      expect(issues.some((i) => i.check_id === 'COMP-014')).toBe(true);
     });
 
     it('should check Purchase compliance for Purchase contracts', () => {
       const terms = { metadata: { contract_type: 'Purchase' } };
       const issues = checker.checkIndustrySpecificCompliance(terms, 'California');
-      expect(issues.length).toBeGreaterThan(0);
+      expect(issues.some((i) => i.check_id === 'COMP-016')).toBe(true);
     });
 
     it('should return empty for Other contract type', () => {

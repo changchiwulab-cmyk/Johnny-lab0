@@ -200,6 +200,108 @@ describe('ContractTermsExtractor', () => {
     });
   });
 
+  describe('extractPermittedUse()', () => {
+    it('should detect permitted use clause', () => {
+      const result = extractor.extractPermittedUse('permitted use for evaluation only');
+      expect(result.description).toContain('limited');
+    });
+
+    it('should detect "use may only" pattern', () => {
+      const result = extractor.extractPermittedUse('use may only be for business purposes');
+      expect(result.description).toContain('limited');
+    });
+
+    it('should return Not specified when not found', () => {
+      const result = extractor.extractPermittedUse('no relevant clause here');
+      expect(result.description).toBe('Not specified');
+    });
+  });
+
+  describe('extractReturnOfInformation()', () => {
+    it('should detect return clause', () => {
+      const result = extractor.extractReturnOfInformation('shall return all documents');
+      expect(result.description).toContain('returned');
+    });
+
+    it('should detect destroy clause', () => {
+      const result = extractor.extractReturnOfInformation('must destroy all copies');
+      expect(result.description).toContain('returned');
+    });
+
+    it('should return Not specified when not found', () => {
+      const result = extractor.extractReturnOfInformation('no relevant clause here');
+      expect(result.description).toBe('Not specified');
+    });
+  });
+
+  describe('extractSLO()', () => {
+    it('should detect response time SLO', () => {
+      const result = extractor.extractSLO('response time: 4 hours for critical issues');
+      expect(result.description).toBeDefined();
+    });
+
+    it('should detect SLO keyword', () => {
+      const result = extractor.extractSLO('SLO targets defined in appendix');
+      expect(result.description).toBeDefined();
+    });
+
+    it('should return Not specified when not found', () => {
+      const result = extractor.extractSLO('no relevant info here xyz');
+      expect(result.description).toBe('Not specified');
+    });
+  });
+
+  describe('extractUptimeGuarantee()', () => {
+    it('should extract 99.9% uptime', () => {
+      const result = extractor.extractUptimeGuarantee('uptime guarantee of 99.9%');
+      expect(result.description).toContain('99.9%');
+    });
+
+    it('should extract 99.99% uptime', () => {
+      const result = extractor.extractUptimeGuarantee('uptime guaranteed at 99.99%');
+      expect(result.description).toContain('99.99%');
+    });
+
+    it('should return Not specified when not found', () => {
+      const result = extractor.extractUptimeGuarantee('no uptime info');
+      expect(result.description).toBe('Not specified');
+    });
+  });
+
+  describe('extractWarranty()', () => {
+    it('should detect warranty clause', () => {
+      const result = extractor.extractWarranty('product warranty for 12 months');
+      expect(result.description).toContain('Warranty');
+    });
+
+    it('should detect guarantee clause', () => {
+      const result = extractor.extractWarranty('satisfaction guarantee included');
+      expect(result.description).toContain('Warranty');
+    });
+
+    it('should return no warranty when not found', () => {
+      const result = extractor.extractWarranty('no relevant clause');
+      expect(result.description).toBe('No warranty specified');
+    });
+  });
+
+  describe('extractDeliveryTerms()', () => {
+    it('should extract delivery in days', () => {
+      const result = extractor.extractDeliveryTerms('delivery within 14 days');
+      expect(result.description).toContain('14');
+    });
+
+    it('should extract delivery in weeks', () => {
+      const result = extractor.extractDeliveryTerms('delivery within 2 weeks');
+      expect(result.description).toContain('2');
+    });
+
+    it('should return Not specified when not found', () => {
+      const result = extractor.extractDeliveryTerms('no delivery info');
+      expect(result.description).toBe('Not specified');
+    });
+  });
+
   describe('extractKeyTerms() - SLA specific', () => {
     it('should extract SLA-specific terms for SLA type', () => {
       const text = 'uptime guarantee 99.9% response time: 4 hours SLO defined';
@@ -236,7 +338,7 @@ describe('ContractTermsExtractor', () => {
     it('should extract basic info from sample contract', async () => {
       const result = await extractor.extract(sampleContract, 'NDA');
       expect(result.basic_info.jurisdiction).toBe('California');
-      expect(result.basic_info.parties.length).toBeGreaterThan(0);
+      expect(result.basic_info.parties).toContain('Acme Corporation');
     });
 
     it('should extract key terms from sample contract', async () => {

@@ -341,4 +341,56 @@ describe('LegalOrchestrator - Integration Tests', () => {
       }
     });
   });
+
+  describe('error propagation', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('should propagate termsExtractor failure through orchestrate()', async () => {
+      jest
+        .spyOn(orchestrator.agents.termsExtractor, 'extract')
+        .mockRejectedValue(new Error('Terms extraction failed'));
+
+      await expect(orchestrator.orchestrate(contractPath, 'NDA')).rejects.toThrow(
+        'Terms extraction failed'
+      );
+    });
+
+    it('should propagate riskAnalyzer failure through executeAgentsInParallel()', async () => {
+      const contractText = fs.readFileSync(contractPath, 'utf-8');
+      orchestrator.timestamp = new Date().toISOString().split('T')[0];
+
+      jest
+        .spyOn(orchestrator.agents.riskAnalyzer, 'analyze')
+        .mockRejectedValue(new Error('Risk analysis failed'));
+
+      await expect(
+        orchestrator.executeAgentsInParallel(contractText, 'NDA', tmpDir)
+      ).rejects.toThrow('Risk analysis failed');
+    });
+
+    it('should propagate complianceChecker failure through executeAgentsInParallel()', async () => {
+      const contractText = fs.readFileSync(contractPath, 'utf-8');
+      orchestrator.timestamp = new Date().toISOString().split('T')[0];
+
+      jest
+        .spyOn(orchestrator.agents.complianceChecker, 'check')
+        .mockRejectedValue(new Error('Compliance check failed'));
+
+      await expect(
+        orchestrator.executeAgentsInParallel(contractText, 'NDA', tmpDir)
+      ).rejects.toThrow('Compliance check failed');
+    });
+
+    it('should propagate recommendationsGenerator failure through orchestrate()', async () => {
+      jest
+        .spyOn(orchestrator.agents.recommendationsGenerator, 'generate')
+        .mockRejectedValue(new Error('Recommendations failed'));
+
+      await expect(orchestrator.orchestrate(contractPath, 'NDA')).rejects.toThrow(
+        'Recommendations failed'
+      );
+    });
+  });
 });
