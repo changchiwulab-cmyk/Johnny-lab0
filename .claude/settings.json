@@ -21,13 +21,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; if [[ \"$f\" == *.{js,ts,jsx,tsx,json}* ]]; then npx prettier --write \"$f\" 2>/dev/null || true; fi; }",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; if [[ \"$f\" =~ \\.(js|ts|jsx|tsx|json)$ ]]; then npx prettier --write \"$f\" 2>/dev/null || true; fi; }",
             "statusMessage": "🎨 格式化代碼...",
             "timeout": 30
           },
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; if [[ \"$f\" == *.{js,ts}* ]]; then echo \"✅ 安全檢查: $f\"; fi; }",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; if [[ \"$f\" =~ \\.(js|ts)$ ]] && [ -f \"$f\" ]; then grep -nE '(password|api_?key|secret)\\s*=\\s*[\"'\"'\"'][^\"'\"'\"']+[\"'\"'\"']' \"$f\" && echo \"⚠️ 潛在安全問題: $f\" || echo \"✅ 安全檢查通過: $f\"; fi; }",
             "statusMessage": "🔒 執行安全檢查...",
             "timeout": 20
           }
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.command' | grep -E '(test|spec)' && echo '{\"systemMessage\": \"✅ 自動化測試已執行\"}' || true",
+            "command": "jq -r '.tool_input.command' | grep -qE '(test|spec)' && echo '{\"systemMessage\": \"✅ 自動化測試已執行\"}' || true",
             "statusMessage": "🧪 驗證測試...",
             "timeout": 60
           }
