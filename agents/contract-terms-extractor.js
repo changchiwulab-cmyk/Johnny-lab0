@@ -91,7 +91,7 @@ class ContractTermsExtractor {
    */
   extractDate(text, keyword) {
     const pattern = new RegExp(
-      `${keyword}[^:]*:\\s*([\\w\\s,]+\\d{1,2},?\\s*\\d{4}|\\d{4}-\\d{2}-\\d{2})`,
+      `(?:${keyword})[^:]*:\\s*([\\w\\s,]+\\d{1,2},?\\s*\\d{4}|\\d{4}-\\d{2}-\\d{2})`,
       'i'
     );
     const match = text.match(pattern);
