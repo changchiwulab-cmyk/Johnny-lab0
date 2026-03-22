@@ -38,7 +38,7 @@ class LegalOrchestrator {
 
     const workflowStartTime = Date.now();
     const outputDir = path.dirname(contractPath);
-    const timestamp = new Date().toISOString().split('T')[0];
+    this.timestamp = new Date().toISOString().split('T')[0];
 
     try {
       // Step 1: 驗證輸入
@@ -65,13 +65,13 @@ class LegalOrchestrator {
         compliance,
         recommendations,
         contractType,
-        timestamp,
+        this.timestamp,
         outputDir
       );
 
       // Step 5: 歸檔結果
       console.log('\n💾 Step 5: 歸檔審查結果...');
-      const archivePath = await this.archiveResults(outputDir, timestamp, contractType);
+      const archivePath = await this.archiveResults(outputDir, this.timestamp, contractType);
 
       const workflowDuration = Date.now() - workflowStartTime;
 
@@ -89,10 +89,10 @@ class LegalOrchestrator {
         archive_path: archivePath,
         duration_ms: workflowDuration,
         artifacts: {
-          terms: path.join(outputDir, `terms_${timestamp}.json`),
-          risks: path.join(outputDir, `risk_flags_${timestamp}.json`),
-          compliance: path.join(outputDir, `compliance_issues_${timestamp}.json`),
-          recommendations: path.join(outputDir, `recommendations_${timestamp}.json`),
+          terms: path.join(outputDir, `terms_${this.timestamp}.json`),
+          risks: path.join(outputDir, `risk_flags_${this.timestamp}.json`),
+          compliance: path.join(outputDir, `compliance_issues_${this.timestamp}.json`),
+          recommendations: path.join(outputDir, `recommendations_${this.timestamp}.json`),
           report: report
         }
       };
@@ -123,53 +123,39 @@ class LegalOrchestrator {
   }
 
   /**
-   * 並行執行 4 個代理
+   * 並行執行代理
+   * 先提取條款（一次），再並行執行風險分析和合規檢查
    */
   async executeAgentsInParallel(contractText, contractType, outputDir) {
-    console.log(`🔄 並行執行 4 個代理...`);
+    console.log(`🔄 執行多代理分析...`);
     const parallelStartTime = Date.now();
 
     try {
-      // 並行執行所有代理
-      const [terms, risks, compliance] = await Promise.all([
-        this.executeTermsExtractor(contractText, contractType, outputDir),
-        this.executeRiskAnalyzer(contractText, contractType, outputDir),
-        this.executeComplianceChecker(contractText, contractType, outputDir)
+      // Step A: 提取條款（僅執行一次）
+      console.log('  └─ 啟動條款提取代理...');
+      const termsStartTime = Date.now();
+      const terms = await this.agents.termsExtractor.extract(contractText, contractType);
+      fs.writeFileSync(
+        path.join(outputDir, `terms_${this.timestamp}.json`),
+        JSON.stringify(terms, null, 2)
+      );
+      console.log(`    ✅ 條款提取完成 (${Date.now() - termsStartTime}ms)`);
+
+      // Step B: 並行執行風險分析和合規檢查（共用已提取的條款）
+      console.log('  └─ 並行啟動風險分析 + 合規檢查...');
+      const [risks, compliance] = await Promise.all([
+        this.executeRiskAnalyzer(terms, contractType, outputDir),
+        this.executeComplianceChecker(terms, contractType, outputDir)
       ]);
 
       const parallelDuration = Date.now() - parallelStartTime;
       console.log(
-        `✅ 並行代理執行完成 (${(parallelDuration / 1000).toFixed(2)}s)`
+        `✅ 多代理分析完成 (${(parallelDuration / 1000).toFixed(2)}s)`
       );
 
       return [terms, risks, compliance];
     } catch (error) {
-      console.error('❌ 並行執行失敗:', error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * 執行條款提取代理
-   */
-  async executeTermsExtractor(contractText, contractType, outputDir) {
-    console.log('  └─ 啟動條款提取代理...');
-    const startTime = Date.now();
-
-    try {
-      const result = await this.agents.termsExtractor.extract(contractText, contractType);
-
-      // 保存結果
-      const timestamp = new Date().toISOString().split('T')[0];
-      const outputFile = path.join(outputDir, `terms_${timestamp}.json`);
-      fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
-
-      const duration = Date.now() - startTime;
-      console.log(`    ✅ 條款提取完成 (${duration}ms)`);
-
-      return result;
-    } catch (error) {
-      console.error('    ❌ 條款提取失敗:', error.message);
+      console.error('❌ 多代理分析失敗:', error.message);
       throw error;
     }
   }
@@ -177,19 +163,16 @@ class LegalOrchestrator {
   /**
    * 執行風險分析代理
    */
-  async executeRiskAnalyzer(contractText, contractType, outputDir) {
-    console.log('  └─ 啟動風險分析代理...');
+  async executeRiskAnalyzer(terms, contractType, outputDir) {
     const startTime = Date.now();
 
     try {
-      // 先提取條款，然後進行風險分析
-      const terms = await this.agents.termsExtractor.extract(contractText, contractType);
       const result = await this.agents.riskAnalyzer.analyze(terms, contractType);
 
-      // 保存結果
-      const timestamp = new Date().toISOString().split('T')[0];
-      const outputFile = path.join(outputDir, `risk_flags_${timestamp}.json`);
-      fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
+      fs.writeFileSync(
+        path.join(outputDir, `risk_flags_${this.timestamp}.json`),
+        JSON.stringify(result, null, 2)
+      );
 
       const duration = Date.now() - startTime;
       console.log(`    ✅ 風險分析完成 (${duration}ms, ${result.metadata.total_risks} 項風險)`);
@@ -204,20 +187,17 @@ class LegalOrchestrator {
   /**
    * 執行合規檢查代理
    */
-  async executeComplianceChecker(contractText, contractType, outputDir) {
-    console.log('  └─ 啟動合規檢查代理...');
+  async executeComplianceChecker(terms, contractType, outputDir) {
     const startTime = Date.now();
 
     try {
-      // 先提取條款，然後進行合規檢查
-      const terms = await this.agents.termsExtractor.extract(contractText, contractType);
       const jurisdiction = terms.basic_info?.jurisdiction || 'California';
       const result = await this.agents.complianceChecker.check(terms, jurisdiction);
 
-      // 保存結果
-      const timestamp = new Date().toISOString().split('T')[0];
-      const outputFile = path.join(outputDir, `compliance_issues_${timestamp}.json`);
-      fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
+      fs.writeFileSync(
+        path.join(outputDir, `compliance_issues_${this.timestamp}.json`),
+        JSON.stringify(result, null, 2)
+      );
 
       const duration = Date.now() - startTime;
       console.log(
@@ -242,8 +222,7 @@ class LegalOrchestrator {
       const result = await this.agents.recommendationsGenerator.generate(risks, compliance, terms);
 
       // 保存結果
-      const timestamp = new Date().toISOString().split('T')[0];
-      const outputFile = path.join(outputDir, `recommendations_${timestamp}.json`);
+      const outputFile = path.join(outputDir, `recommendations_${this.timestamp}.json`);
       fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
 
       const duration = Date.now() - startTime;

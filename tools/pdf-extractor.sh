@@ -63,7 +63,7 @@ case "$FILE_EXT" in
         else
             # 如果沒有 pdftotext，嘗試使用 Python
             if command -v python3 &> /dev/null; then
-                python3 << 'PYTHON_SCRIPT'
+                python3 -c "
 import sys
 try:
     from PyPDF2 import PdfReader
@@ -76,12 +76,12 @@ try:
             text += page.extract_text() + '\n'
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(text)
-    print("✅ PDF 文本提取成功")
+    print('PDF text extraction successful')
 except ImportError:
-    print("❌ 錯誤: 未安裝 PyPDF2")
+    print('Error: PyPDF2 not installed')
     sys.exit(1)
-PYTHON_SCRIPT
-                python3 - "$INPUT_FILE" "$OUTPUT_FILE"
+" "$INPUT_FILE" "$OUTPUT_FILE"
+                echo -e "${GREEN}✅ PDF 文本提取成功${NC}"
             else
                 echo -e "${RED}❌ 錯誤：未找到 PDF 提取工具（需要 pdftotext、pdftxt 或 PyPDF2）${NC}"
                 exit 1
@@ -92,7 +92,7 @@ PYTHON_SCRIPT
     docx)
         echo -e "${YELLOW}⏳ 從 DOCX 提取文本...${NC}"
         if command -v python3 &> /dev/null; then
-            python3 << 'PYTHON_SCRIPT'
+            python3 -c "
 import sys
 try:
     from docx import Document
@@ -102,12 +102,12 @@ try:
     with open(output_path, 'w', encoding='utf-8') as f:
         for para in doc.paragraphs:
             f.write(para.text + '\n')
-    print("✅ DOCX 文本提取成功")
+    print('DOCX text extraction successful')
 except ImportError:
-    print("❌ 錯誤: 未安裝 python-docx")
+    print('Error: python-docx not installed')
     sys.exit(1)
-PYTHON_SCRIPT
-            python3 - "$INPUT_FILE" "$OUTPUT_FILE"
+" "$INPUT_FILE" "$OUTPUT_FILE"
+            echo -e "${GREEN}✅ DOCX 文本提取成功${NC}"
         else
             echo -e "${RED}❌ 錯誤：需要 Python 3 和 python-docx 庫${NC}"
             exit 1

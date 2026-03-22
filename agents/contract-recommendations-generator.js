@@ -79,7 +79,7 @@ class ContractRecommendationsGenerator {
       (risks.metadata?.medium_severity || 0) + (compliance.metadata?.medium || 0);
     if (mediumCount > 0) {
       summary += `⚠️ **應該處理的項目**: ${mediumCount} 項\n`;
-      summary += '- 這些項目可能影響中期風險\n`;
+      summary += '- 這些項目可能影響中期風險\n';
       summary += '- 建議在後續協商中逐步解決\n\n';
     }
 

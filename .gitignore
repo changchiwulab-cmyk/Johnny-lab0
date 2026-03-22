@@ -1,0 +1,24 @@
+# 合同審查工作流動態生成檔案
+terms_*.json
+risk_flags_*.json
+compliance_issues_*.json
+recommendations_*.json
+review_report_*.md
+*_text.txt
+
+# 歸檔目錄
+departments/legal/archive/
+
+# IDE
+.vscode/
+.idea/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 本地設定
+.claude/settings.local.json
