@@ -1,21 +1,21 @@
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const LegalOrchestrator = require('../../agents/legal-orchestrator');
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const LegalOrchestrator = require("../../agents/legal-orchestrator");
 
-describe('LegalOrchestrator - Integration Tests', () => {
+describe("LegalOrchestrator - Integration Tests", () => {
   let orchestrator;
   let tmpDir;
   let contractPath;
   const sampleContractFixture = path.join(
     __dirname,
-    '../fixtures/sample-contract.txt'
+    "../fixtures/sample-contract.txt",
   );
 
   beforeEach(() => {
     orchestrator = new LegalOrchestrator();
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'legal-test-'));
-    contractPath = path.join(tmpDir, 'test-contract.txt');
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "legal-test-"));
+    contractPath = path.join(tmpDir, "test-contract.txt");
     fs.copyFileSync(sampleContractFixture, contractPath);
   });
 
@@ -23,130 +23,123 @@ describe('LegalOrchestrator - Integration Tests', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  describe('constructor', () => {
-    it('should initialize with all 4 agents', () => {
+  describe("constructor", () => {
+    it("should initialize with all 4 agents", () => {
       expect(orchestrator.agents.termsExtractor).toBeDefined();
       expect(orchestrator.agents.riskAnalyzer).toBeDefined();
       expect(orchestrator.agents.complianceChecker).toBeDefined();
       expect(orchestrator.agents.recommendationsGenerator).toBeDefined();
     });
 
-    it('should have correct name and version', () => {
-      expect(orchestrator.name).toBe('LegalOrchestrator');
-      expect(orchestrator.version).toBe('1.0.0');
+    it("should have correct name and version", () => {
+      expect(orchestrator.name).toBe("LegalOrchestrator");
+      expect(orchestrator.version).toBe("1.0.0");
     });
   });
 
-  describe('validateInput()', () => {
-    it('should throw when file does not exist', () => {
+  describe("validateInput()", () => {
+    it("should throw when file does not exist", () => {
       expect(() => {
-        orchestrator.validateInput('/nonexistent/file.txt');
-      }).toThrow('合同文件不存在');
+        orchestrator.validateInput("/nonexistent/file.txt");
+      }).toThrow("合同文件不存在");
     });
 
-    it('should throw when file is empty', () => {
-      const emptyFile = path.join(tmpDir, 'empty.txt');
-      fs.writeFileSync(emptyFile, '');
+    it("should throw when file is empty", () => {
+      const emptyFile = path.join(tmpDir, "empty.txt");
+      fs.writeFileSync(emptyFile, "");
       expect(() => {
         orchestrator.validateInput(emptyFile);
-      }).toThrow('合同文件為空');
+      }).toThrow("合同文件為空");
     });
 
-    it('should throw when file contains only whitespace', () => {
-      const wsFile = path.join(tmpDir, 'whitespace.txt');
-      fs.writeFileSync(wsFile, '   \n\n   ');
+    it("should throw when file contains only whitespace", () => {
+      const wsFile = path.join(tmpDir, "whitespace.txt");
+      fs.writeFileSync(wsFile, "   \n\n   ");
       expect(() => {
         orchestrator.validateInput(wsFile);
-      }).toThrow('合同文件為空');
+      }).toThrow("合同文件為空");
     });
 
-    it('should return contract text for valid file', () => {
+    it("should return contract text for valid file", () => {
       const text = orchestrator.validateInput(contractPath);
       expect(text.length).toBeGreaterThan(0);
-      expect(text).toContain('NON-DISCLOSURE AGREEMENT');
+      expect(text).toContain("NON-DISCLOSURE AGREEMENT");
     });
   });
 
-  describe('executeAgentsInParallel()', () => {
-    it('should return [terms, risks, compliance]', async () => {
-      const contractText = fs.readFileSync(contractPath, 'utf-8');
-      orchestrator.timestamp = new Date().toISOString().split('T')[0];
+  describe("executeAgentsInParallel()", () => {
+    it("should return [terms, risks, compliance]", async () => {
+      const contractText = fs.readFileSync(contractPath, "utf-8");
+      orchestrator.timestamp = new Date().toISOString().split("T")[0];
 
-      const [terms, risks, compliance] = await orchestrator.executeAgentsInParallel(
-        contractText,
-        'NDA',
-        tmpDir
-      );
+      const [terms, risks, compliance] =
+        await orchestrator.executeAgentsInParallel(contractText, "NDA", tmpDir);
 
-      expect(terms).toHaveProperty('basic_info');
-      expect(terms).toHaveProperty('key_terms');
-      expect(terms.extraction_status).toBe('completed');
+      expect(terms).toHaveProperty("basic_info");
+      expect(terms).toHaveProperty("key_terms");
+      expect(terms.extraction_status).toBe("completed");
 
-      expect(risks).toHaveProperty('risks');
-      expect(risks).toHaveProperty('metadata');
-      expect(risks.analysis_status).toBe('completed');
+      expect(risks).toHaveProperty("risks");
+      expect(risks).toHaveProperty("metadata");
+      expect(risks.analysis_status).toBe("completed");
 
-      expect(compliance).toHaveProperty('compliance_checks');
-      expect(compliance).toHaveProperty('metadata');
-      expect(compliance.check_status).toBe('completed');
+      expect(compliance).toHaveProperty("compliance_checks");
+      expect(compliance).toHaveProperty("metadata");
+      expect(compliance.check_status).toBe("completed");
     });
 
-    it('should write terms JSON to output directory', async () => {
-      const contractText = fs.readFileSync(contractPath, 'utf-8');
-      const timestamp = new Date().toISOString().split('T')[0];
+    it("should write terms JSON to output directory", async () => {
+      const contractText = fs.readFileSync(contractPath, "utf-8");
+      const timestamp = new Date().toISOString().split("T")[0];
       orchestrator.timestamp = timestamp;
 
-      await orchestrator.executeAgentsInParallel(contractText, 'NDA', tmpDir);
+      await orchestrator.executeAgentsInParallel(contractText, "NDA", tmpDir);
 
       const termsFile = path.join(tmpDir, `terms_${timestamp}.json`);
       expect(fs.existsSync(termsFile)).toBe(true);
-      const termsData = JSON.parse(fs.readFileSync(termsFile, 'utf-8'));
-      expect(termsData.extraction_status).toBe('completed');
+      const termsData = JSON.parse(fs.readFileSync(termsFile, "utf-8"));
+      expect(termsData.extraction_status).toBe("completed");
     });
   });
 
-  describe('generateRecommendations()', () => {
-    it('should generate recommendations from risks and compliance', async () => {
-      const contractText = fs.readFileSync(contractPath, 'utf-8');
-      orchestrator.timestamp = new Date().toISOString().split('T')[0];
+  describe("generateRecommendations()", () => {
+    it("should generate recommendations from risks and compliance", async () => {
+      const contractText = fs.readFileSync(contractPath, "utf-8");
+      orchestrator.timestamp = new Date().toISOString().split("T")[0];
 
-      const [terms, risks, compliance] = await orchestrator.executeAgentsInParallel(
-        contractText,
-        'NDA',
-        tmpDir
-      );
+      const [terms, risks, compliance] =
+        await orchestrator.executeAgentsInParallel(contractText, "NDA", tmpDir);
 
       const recommendations = await orchestrator.generateRecommendations(
         risks,
         compliance,
         terms,
-        tmpDir
+        tmpDir,
       );
 
-      expect(recommendations).toHaveProperty('executive_summary');
-      expect(recommendations).toHaveProperty('critical_actions');
-      expect(recommendations).toHaveProperty('negotiation_points');
-      expect(recommendations.metadata.total_recommendations).toBeGreaterThanOrEqual(0);
+      expect(recommendations).toHaveProperty("executive_summary");
+      expect(recommendations).toHaveProperty("critical_actions");
+      expect(recommendations).toHaveProperty("negotiation_points");
+      expect(
+        recommendations.metadata.total_recommendations,
+      ).toBeGreaterThanOrEqual(0);
     });
   });
 
-  describe('synthesizeReport()', () => {
-    it('should generate a markdown report file', async () => {
-      const contractText = fs.readFileSync(contractPath, 'utf-8');
-      const timestamp = new Date().toISOString().split('T')[0];
+  describe("synthesizeReport()", () => {
+    it("should generate a markdown report file", async () => {
+      const contractText = fs.readFileSync(contractPath, "utf-8");
+      const timestamp = new Date().toISOString().split("T")[0];
       orchestrator.timestamp = timestamp;
 
-      const [terms, risks, compliance] = await orchestrator.executeAgentsInParallel(
-        contractText,
-        'NDA',
-        tmpDir
-      );
+      const [terms, risks, compliance] =
+        await orchestrator.executeAgentsInParallel(contractText, "NDA", tmpDir);
 
       const recommendations = await orchestrator.generateRecommendations(
         risks,
         compliance,
         terms,
-        tmpDir
+        tmpDir,
       );
 
       const reportFile = await orchestrator.synthesizeReport(
@@ -154,103 +147,107 @@ describe('LegalOrchestrator - Integration Tests', () => {
         risks,
         compliance,
         recommendations,
-        'NDA',
+        "NDA",
         timestamp,
-        tmpDir
+        tmpDir,
       );
 
       expect(fs.existsSync(reportFile)).toBe(true);
-      const reportContent = fs.readFileSync(reportFile, 'utf-8');
-      expect(reportContent).toContain('合同審查報告');
-      expect(reportContent).toContain('NDA');
-      expect(reportContent).toContain('風險總數');
+      const reportContent = fs.readFileSync(reportFile, "utf-8");
+      expect(reportContent).toContain("合同審查報告");
+      expect(reportContent).toContain("NDA");
+      expect(reportContent).toContain("風險總數");
     });
   });
 
-  describe('archiveResults()', () => {
-    it('should create archive directory and copy files', async () => {
-      const timestamp = new Date().toISOString().split('T')[0];
+  describe("archiveResults()", () => {
+    it("should create archive directory and copy files", async () => {
+      const timestamp = new Date().toISOString().split("T")[0];
 
       // Create some result files in tmpDir
-      fs.writeFileSync(path.join(tmpDir, `terms_${timestamp}.json`), '{}');
-      fs.writeFileSync(path.join(tmpDir, `risk_flags_${timestamp}.json`), '{}');
+      fs.writeFileSync(path.join(tmpDir, `terms_${timestamp}.json`), "{}");
+      fs.writeFileSync(path.join(tmpDir, `risk_flags_${timestamp}.json`), "{}");
 
-      const archivePath = await orchestrator.archiveResults(tmpDir, timestamp, 'NDA');
+      const archivePath = await orchestrator.archiveResults(
+        tmpDir,
+        timestamp,
+        "NDA",
+      );
 
       expect(fs.existsSync(archivePath)).toBe(true);
-      expect(archivePath).toContain('archive');
+      expect(archivePath).toContain("archive");
     });
 
-    it('should handle archive failure gracefully', async () => {
+    it("should handle archive failure gracefully", async () => {
       // Use a path that might fail - archiveResults should catch and return outputDir
-      const result = await orchestrator.archiveResults(tmpDir, 'test', 'NDA');
+      const result = await orchestrator.archiveResults(tmpDir, "test", "NDA");
       expect(result).toBeDefined();
     });
   });
 
-  describe('formatCriticalActions()', () => {
-    it('should return message when no actions', () => {
-      expect(orchestrator.formatCriticalActions([])).toContain('沒有');
-      expect(orchestrator.formatCriticalActions(null)).toContain('沒有');
+  describe("formatCriticalActions()", () => {
+    it("should return message when no actions", () => {
+      expect(orchestrator.formatCriticalActions([])).toContain("沒有");
+      expect(orchestrator.formatCriticalActions(null)).toContain("沒有");
     });
 
-    it('should format actions correctly', () => {
+    it("should format actions correctly", () => {
       const actions = [
         {
-          title: 'Test Action',
-          priority: 'CRITICAL',
-          current_state: 'Bad',
-          recommended_state: 'Good',
-          action_items: ['Do thing 1', 'Do thing 2'],
-          timeline: 'This week',
+          title: "Test Action",
+          priority: "CRITICAL",
+          current_state: "Bad",
+          recommended_state: "Good",
+          action_items: ["Do thing 1", "Do thing 2"],
+          timeline: "This week",
         },
       ];
       const formatted = orchestrator.formatCriticalActions(actions);
-      expect(formatted).toContain('Test Action');
-      expect(formatted).toContain('CRITICAL');
+      expect(formatted).toContain("Test Action");
+      expect(formatted).toContain("CRITICAL");
     });
   });
 
-  describe('formatNegotiationPoints()', () => {
-    it('should return message when no points', () => {
-      expect(orchestrator.formatNegotiationPoints([])).toContain('沒有');
+  describe("formatNegotiationPoints()", () => {
+    it("should return message when no points", () => {
+      expect(orchestrator.formatNegotiationPoints([])).toContain("沒有");
     });
 
-    it('should format points correctly', () => {
+    it("should format points correctly", () => {
       const points = [
         {
-          topic: 'Test Topic',
-          our_position: 'Strong',
-          opening_offer: 'High',
-          fallback_position: 'Medium',
-          walk_away_point: 'Low',
+          topic: "Test Topic",
+          our_position: "Strong",
+          opening_offer: "High",
+          fallback_position: "Medium",
+          walk_away_point: "Low",
         },
       ];
       const formatted = orchestrator.formatNegotiationPoints(points);
-      expect(formatted).toContain('Test Topic');
+      expect(formatted).toContain("Test Topic");
     });
   });
 
-  describe('formatComplianceImprovements()', () => {
-    it('should return message when no improvements', () => {
-      expect(orchestrator.formatComplianceImprovements([])).toContain('沒有');
+  describe("formatComplianceImprovements()", () => {
+    it("should return message when no improvements", () => {
+      expect(orchestrator.formatComplianceImprovements([])).toContain("沒有");
     });
   });
 
-  describe('orchestrate() - full end-to-end workflow', () => {
-    it('should complete full workflow successfully', async () => {
-      const result = await orchestrator.orchestrate(contractPath, 'NDA');
+  describe("orchestrate() - full end-to-end workflow", () => {
+    it("should complete full workflow successfully", async () => {
+      const result = await orchestrator.orchestrate(contractPath, "NDA");
 
       expect(result.success).toBe(true);
-      expect(result.status).toBe('completed');
+      expect(result.status).toBe("completed");
       expect(result.duration_ms).toBeGreaterThan(0);
-      expect(result).toHaveProperty('report_file');
-      expect(result).toHaveProperty('archive_path');
-      expect(result).toHaveProperty('artifacts');
+      expect(result).toHaveProperty("report_file");
+      expect(result).toHaveProperty("archive_path");
+      expect(result).toHaveProperty("artifacts");
     });
 
-    it('should generate all artifact files', async () => {
-      const result = await orchestrator.orchestrate(contractPath, 'NDA');
+    it("should generate all artifact files", async () => {
+      const result = await orchestrator.orchestrate(contractPath, "NDA");
 
       // Report file should exist (either in tmpDir or archive)
       expect(result.report_file).toBeTruthy();
@@ -260,53 +257,50 @@ describe('LegalOrchestrator - Integration Tests', () => {
       expect(result.artifacts.recommendations).toBeTruthy();
     });
 
-    it('should throw for nonexistent contract file', async () => {
+    it("should throw for nonexistent contract file", async () => {
       await expect(
-        orchestrator.orchestrate('/nonexistent/contract.txt', 'NDA')
-      ).rejects.toThrow('合同文件不存在');
+        orchestrator.orchestrate("/nonexistent/contract.txt", "NDA"),
+      ).rejects.toThrow("合同文件不存在");
     });
 
-    it('should throw for empty contract file', async () => {
-      const emptyFile = path.join(tmpDir, 'empty.txt');
-      fs.writeFileSync(emptyFile, '');
+    it("should throw for empty contract file", async () => {
+      const emptyFile = path.join(tmpDir, "empty.txt");
+      fs.writeFileSync(emptyFile, "");
 
-      await expect(
-        orchestrator.orchestrate(emptyFile, 'NDA')
-      ).rejects.toThrow('合同文件為空');
+      await expect(orchestrator.orchestrate(emptyFile, "NDA")).rejects.toThrow(
+        "合同文件為空",
+      );
     });
 
-    it('should work with default contract type', async () => {
+    it("should work with default contract type", async () => {
       const result = await orchestrator.orchestrate(contractPath);
 
       expect(result.success).toBe(true);
-      expect(result.status).toBe('completed');
+      expect(result.status).toBe("completed");
     });
 
-    it('should work with SLA contract type', async () => {
-      const result = await orchestrator.orchestrate(contractPath, 'SLA');
+    it("should work with SLA contract type", async () => {
+      const result = await orchestrator.orchestrate(contractPath, "SLA");
 
       expect(result.success).toBe(true);
-      expect(result.status).toBe('completed');
+      expect(result.status).toBe("completed");
     });
 
-    it('should work with Purchase contract type', async () => {
-      const result = await orchestrator.orchestrate(contractPath, 'Purchase');
+    it("should work with Purchase contract type", async () => {
+      const result = await orchestrator.orchestrate(contractPath, "Purchase");
 
       expect(result.success).toBe(true);
-      expect(result.status).toBe('completed');
+      expect(result.status).toBe("completed");
     });
   });
 
-  describe('agent coordination', () => {
-    it('should pass extracted terms to risk analyzer and compliance checker', async () => {
-      const contractText = fs.readFileSync(contractPath, 'utf-8');
-      orchestrator.timestamp = new Date().toISOString().split('T')[0];
+  describe("agent coordination", () => {
+    it("should pass extracted terms to risk analyzer and compliance checker", async () => {
+      const contractText = fs.readFileSync(contractPath, "utf-8");
+      orchestrator.timestamp = new Date().toISOString().split("T")[0];
 
-      const [terms, risks, compliance] = await orchestrator.executeAgentsInParallel(
-        contractText,
-        'NDA',
-        tmpDir
-      );
+      const [terms, risks, compliance] =
+        await orchestrator.executeAgentsInParallel(contractText, "NDA", tmpDir);
 
       // Risk analyzer should have used terms to identify risks
       expect(risks.metadata.total_risks).toBeGreaterThanOrEqual(0);
@@ -315,24 +309,21 @@ describe('LegalOrchestrator - Integration Tests', () => {
       expect(compliance.metadata.total_issues).toBeGreaterThanOrEqual(0);
 
       // Terms should be a proper extraction result
-      expect(terms.basic_info.jurisdiction).toBe('California');
+      expect(terms.basic_info.jurisdiction).toBe("California");
     });
 
-    it('should pass risks and compliance to recommendations generator', async () => {
-      const contractText = fs.readFileSync(contractPath, 'utf-8');
-      orchestrator.timestamp = new Date().toISOString().split('T')[0];
+    it("should pass risks and compliance to recommendations generator", async () => {
+      const contractText = fs.readFileSync(contractPath, "utf-8");
+      orchestrator.timestamp = new Date().toISOString().split("T")[0];
 
-      const [terms, risks, compliance] = await orchestrator.executeAgentsInParallel(
-        contractText,
-        'NDA',
-        tmpDir
-      );
+      const [terms, risks, compliance] =
+        await orchestrator.executeAgentsInParallel(contractText, "NDA", tmpDir);
 
       const recommendations = await orchestrator.generateRecommendations(
         risks,
         compliance,
         terms,
-        tmpDir
+        tmpDir,
       );
 
       // Recommendations should reference issues found by other agents
@@ -342,55 +333,55 @@ describe('LegalOrchestrator - Integration Tests', () => {
     });
   });
 
-  describe('error propagation', () => {
+  describe("error propagation", () => {
     afterEach(() => {
       jest.restoreAllMocks();
     });
 
-    it('should propagate termsExtractor failure through orchestrate()', async () => {
+    it("should propagate termsExtractor failure through orchestrate()", async () => {
       jest
-        .spyOn(orchestrator.agents.termsExtractor, 'extract')
-        .mockRejectedValue(new Error('Terms extraction failed'));
-
-      await expect(orchestrator.orchestrate(contractPath, 'NDA')).rejects.toThrow(
-        'Terms extraction failed'
-      );
-    });
-
-    it('should propagate riskAnalyzer failure through executeAgentsInParallel()', async () => {
-      const contractText = fs.readFileSync(contractPath, 'utf-8');
-      orchestrator.timestamp = new Date().toISOString().split('T')[0];
-
-      jest
-        .spyOn(orchestrator.agents.riskAnalyzer, 'analyze')
-        .mockRejectedValue(new Error('Risk analysis failed'));
+        .spyOn(orchestrator.agents.termsExtractor, "extract")
+        .mockRejectedValue(new Error("Terms extraction failed"));
 
       await expect(
-        orchestrator.executeAgentsInParallel(contractText, 'NDA', tmpDir)
-      ).rejects.toThrow('Risk analysis failed');
+        orchestrator.orchestrate(contractPath, "NDA"),
+      ).rejects.toThrow("Terms extraction failed");
     });
 
-    it('should propagate complianceChecker failure through executeAgentsInParallel()', async () => {
-      const contractText = fs.readFileSync(contractPath, 'utf-8');
-      orchestrator.timestamp = new Date().toISOString().split('T')[0];
+    it("should propagate riskAnalyzer failure through executeAgentsInParallel()", async () => {
+      const contractText = fs.readFileSync(contractPath, "utf-8");
+      orchestrator.timestamp = new Date().toISOString().split("T")[0];
 
       jest
-        .spyOn(orchestrator.agents.complianceChecker, 'check')
-        .mockRejectedValue(new Error('Compliance check failed'));
+        .spyOn(orchestrator.agents.riskAnalyzer, "analyze")
+        .mockRejectedValue(new Error("Risk analysis failed"));
 
       await expect(
-        orchestrator.executeAgentsInParallel(contractText, 'NDA', tmpDir)
-      ).rejects.toThrow('Compliance check failed');
+        orchestrator.executeAgentsInParallel(contractText, "NDA", tmpDir),
+      ).rejects.toThrow("Risk analysis failed");
     });
 
-    it('should propagate recommendationsGenerator failure through orchestrate()', async () => {
-      jest
-        .spyOn(orchestrator.agents.recommendationsGenerator, 'generate')
-        .mockRejectedValue(new Error('Recommendations failed'));
+    it("should propagate complianceChecker failure through executeAgentsInParallel()", async () => {
+      const contractText = fs.readFileSync(contractPath, "utf-8");
+      orchestrator.timestamp = new Date().toISOString().split("T")[0];
 
-      await expect(orchestrator.orchestrate(contractPath, 'NDA')).rejects.toThrow(
-        'Recommendations failed'
-      );
+      jest
+        .spyOn(orchestrator.agents.complianceChecker, "check")
+        .mockRejectedValue(new Error("Compliance check failed"));
+
+      await expect(
+        orchestrator.executeAgentsInParallel(contractText, "NDA", tmpDir),
+      ).rejects.toThrow("Compliance check failed");
+    });
+
+    it("should propagate recommendationsGenerator failure through orchestrate()", async () => {
+      jest
+        .spyOn(orchestrator.agents.recommendationsGenerator, "generate")
+        .mockRejectedValue(new Error("Recommendations failed"));
+
+      await expect(
+        orchestrator.orchestrate(contractPath, "NDA"),
+      ).rejects.toThrow("Recommendations failed");
     });
   });
 });

@@ -4,24 +4,24 @@
  * 進行完整的合同審查工作流
  */
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+const fs = require("fs");
+const path = require("path");
+const { execSync } = require("child_process");
 
-const ContractTermsExtractor = require('./contract-terms-extractor');
-const ContractRiskAnalyzer = require('./contract-risk-analyzer');
-const ContractComplianceChecker = require('./contract-compliance-checker');
-const ContractRecommendationsGenerator = require('./contract-recommendations-generator');
+const ContractTermsExtractor = require("./contract-terms-extractor");
+const ContractRiskAnalyzer = require("./contract-risk-analyzer");
+const ContractComplianceChecker = require("./contract-compliance-checker");
+const ContractRecommendationsGenerator = require("./contract-recommendations-generator");
 
 class LegalOrchestrator {
   constructor() {
-    this.name = 'LegalOrchestrator';
-    this.version = '1.0.0';
+    this.name = "LegalOrchestrator";
+    this.version = "1.0.0";
     this.agents = {
       termsExtractor: new ContractTermsExtractor(),
       riskAnalyzer: new ContractRiskAnalyzer(),
       complianceChecker: new ContractComplianceChecker(),
-      recommendationsGenerator: new ContractRecommendationsGenerator()
+      recommendationsGenerator: new ContractRecommendationsGenerator(),
     };
   }
 
@@ -31,34 +31,39 @@ class LegalOrchestrator {
    * @param {string} contractType - 合同類型 (NDA, SLA 等)
    * @param {object} options - 其他選項
    */
-  async orchestrate(contractPath, contractType = 'Other', options = {}) {
-    console.log('\n' + '='.repeat(60));
-    console.log('📋 [LegalOrchestrator] 開始合同審查工作流程');
-    console.log('='.repeat(60));
+  async orchestrate(contractPath, contractType = "Other", options = {}) {
+    console.log("\n" + "=".repeat(60));
+    console.log("📋 [LegalOrchestrator] 開始合同審查工作流程");
+    console.log("=".repeat(60));
 
     const workflowStartTime = Date.now();
     const outputDir = path.dirname(contractPath);
-    this.timestamp = new Date().toISOString().split('T')[0];
+    this.timestamp = new Date().toISOString().split("T")[0];
 
     try {
       // Step 1: 驗證輸入
-      console.log('\n📥 Step 1: 驗證輸入文件...');
+      console.log("\n📥 Step 1: 驗證輸入文件...");
       const contractText = this.validateInput(contractPath);
 
       // Step 2: 並行執行 4 個代理
-      console.log('\n⚡ Step 2: 啟動並行代理...');
+      console.log("\n⚡ Step 2: 啟動並行代理...");
       const [terms, risks, compliance] = await this.executeAgentsInParallel(
         contractText,
         contractType,
-        outputDir
+        outputDir,
       );
 
       // Step 3: 生成建議
-      console.log('\n💡 Step 3: 生成修改建議...');
-      const recommendations = await this.generateRecommendations(risks, compliance, terms, outputDir);
+      console.log("\n💡 Step 3: 生成修改建議...");
+      const recommendations = await this.generateRecommendations(
+        risks,
+        compliance,
+        terms,
+        outputDir,
+      );
 
       // Step 4: 合成最終報告
-      console.log('\n📄 Step 4: 合成最終審查報告...');
+      console.log("\n📄 Step 4: 合成最終審查報告...");
       const report = await this.synthesizeReport(
         terms,
         risks,
@@ -66,41 +71,48 @@ class LegalOrchestrator {
         recommendations,
         contractType,
         this.timestamp,
-        outputDir
+        outputDir,
       );
 
       // Step 5: 歸檔結果
-      console.log('\n💾 Step 5: 歸檔審查結果...');
-      const archivePath = await this.archiveResults(outputDir, this.timestamp, contractType);
+      console.log("\n💾 Step 5: 歸檔審查結果...");
+      const archivePath = await this.archiveResults(
+        outputDir,
+        this.timestamp,
+        contractType,
+      );
 
       const workflowDuration = Date.now() - workflowStartTime;
 
-      console.log('\n' + '='.repeat(60));
-      console.log('✅ 審查工作流程完成');
-      console.log('='.repeat(60));
+      console.log("\n" + "=".repeat(60));
+      console.log("✅ 審查工作流程完成");
+      console.log("=".repeat(60));
       console.log(`⏱️  總耗時: ${(workflowDuration / 1000).toFixed(2)} 秒`);
       console.log(`📂 歸檔位置: ${archivePath}`);
       console.log(`📄 最終報告: ${report}`);
 
       return {
         success: true,
-        status: 'completed',
+        status: "completed",
         report_file: report,
         archive_path: archivePath,
         duration_ms: workflowDuration,
         artifacts: {
           terms: path.join(outputDir, `terms_${this.timestamp}.json`),
           risks: path.join(outputDir, `risk_flags_${this.timestamp}.json`),
-          compliance: path.join(outputDir, `compliance_issues_${this.timestamp}.json`),
-          recommendations: path.join(outputDir, `recommendations_${this.timestamp}.json`),
-          report: report
-        }
+          compliance: path.join(
+            outputDir,
+            `compliance_issues_${this.timestamp}.json`,
+          ),
+          recommendations: path.join(
+            outputDir,
+            `recommendations_${this.timestamp}.json`,
+          ),
+          report: report,
+        },
       };
     } catch (error) {
-      console.error(
-        `\n❌ [LegalOrchestrator] 工作流程失敗:`,
-        error.message
-      );
+      console.error(`\n❌ [LegalOrchestrator] 工作流程失敗:`, error.message);
       throw error;
     }
   }
@@ -113,9 +125,9 @@ class LegalOrchestrator {
       throw new Error(`合同文件不存在: ${contractPath}`);
     }
 
-    const contractText = fs.readFileSync(contractPath, 'utf-8');
+    const contractText = fs.readFileSync(contractPath, "utf-8");
     if (!contractText || contractText.trim().length === 0) {
-      throw new Error('合同文件為空');
+      throw new Error("合同文件為空");
     }
 
     console.log(`✅ 文件驗證成功 (${contractText.length} 字符)`);
@@ -132,30 +144,33 @@ class LegalOrchestrator {
 
     try {
       // Step A: 提取條款（僅執行一次）
-      console.log('  └─ 啟動條款提取代理...');
+      console.log("  └─ 啟動條款提取代理...");
       const termsStartTime = Date.now();
-      const terms = await this.agents.termsExtractor.extract(contractText, contractType);
+      const terms = await this.agents.termsExtractor.extract(
+        contractText,
+        contractType,
+      );
       fs.writeFileSync(
         path.join(outputDir, `terms_${this.timestamp}.json`),
-        JSON.stringify(terms, null, 2)
+        JSON.stringify(terms, null, 2),
       );
       console.log(`    ✅ 條款提取完成 (${Date.now() - termsStartTime}ms)`);
 
       // Step B: 並行執行風險分析和合規檢查（共用已提取的條款）
-      console.log('  └─ 並行啟動風險分析 + 合規檢查...');
+      console.log("  └─ 並行啟動風險分析 + 合規檢查...");
       const [risks, compliance] = await Promise.all([
         this.executeRiskAnalyzer(terms, contractType, outputDir),
-        this.executeComplianceChecker(terms, contractType, outputDir)
+        this.executeComplianceChecker(terms, contractType, outputDir),
       ]);
 
       const parallelDuration = Date.now() - parallelStartTime;
       console.log(
-        `✅ 多代理分析完成 (${(parallelDuration / 1000).toFixed(2)}s)`
+        `✅ 多代理分析完成 (${(parallelDuration / 1000).toFixed(2)}s)`,
       );
 
       return [terms, risks, compliance];
     } catch (error) {
-      console.error('❌ 多代理分析失敗:', error.message);
+      console.error("❌ 多代理分析失敗:", error.message);
       throw error;
     }
   }
@@ -167,19 +182,24 @@ class LegalOrchestrator {
     const startTime = Date.now();
 
     try {
-      const result = await this.agents.riskAnalyzer.analyze(terms, contractType);
+      const result = await this.agents.riskAnalyzer.analyze(
+        terms,
+        contractType,
+      );
 
       fs.writeFileSync(
         path.join(outputDir, `risk_flags_${this.timestamp}.json`),
-        JSON.stringify(result, null, 2)
+        JSON.stringify(result, null, 2),
       );
 
       const duration = Date.now() - startTime;
-      console.log(`    ✅ 風險分析完成 (${duration}ms, ${result.metadata.total_risks} 項風險)`);
+      console.log(
+        `    ✅ 風險分析完成 (${duration}ms, ${result.metadata.total_risks} 項風險)`,
+      );
 
       return result;
     } catch (error) {
-      console.error('    ❌ 風險分析失敗:', error.message);
+      console.error("    ❌ 風險分析失敗:", error.message);
       throw error;
     }
   }
@@ -191,22 +211,25 @@ class LegalOrchestrator {
     const startTime = Date.now();
 
     try {
-      const jurisdiction = terms.basic_info?.jurisdiction || 'California';
-      const result = await this.agents.complianceChecker.check(terms, jurisdiction);
+      const jurisdiction = terms.basic_info?.jurisdiction || "California";
+      const result = await this.agents.complianceChecker.check(
+        terms,
+        jurisdiction,
+      );
 
       fs.writeFileSync(
         path.join(outputDir, `compliance_issues_${this.timestamp}.json`),
-        JSON.stringify(result, null, 2)
+        JSON.stringify(result, null, 2),
       );
 
       const duration = Date.now() - startTime;
       console.log(
-        `    ✅ 合規檢查完成 (${duration}ms, ${result.metadata.total_issues} 項問題)`
+        `    ✅ 合規檢查完成 (${duration}ms, ${result.metadata.total_issues} 項問題)`,
       );
 
       return result;
     } catch (error) {
-      console.error('    ❌ 合規檢查失敗:', error.message);
+      console.error("    ❌ 合規檢查失敗:", error.message);
       throw error;
     }
   }
@@ -219,20 +242,27 @@ class LegalOrchestrator {
     const startTime = Date.now();
 
     try {
-      const result = await this.agents.recommendationsGenerator.generate(risks, compliance, terms);
+      const result = await this.agents.recommendationsGenerator.generate(
+        risks,
+        compliance,
+        terms,
+      );
 
       // 保存結果
-      const outputFile = path.join(outputDir, `recommendations_${this.timestamp}.json`);
+      const outputFile = path.join(
+        outputDir,
+        `recommendations_${this.timestamp}.json`,
+      );
       fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
 
       const duration = Date.now() - startTime;
       console.log(
-        `✅ 建議生成完成 (${duration}ms, ${result.metadata.total_recommendations} 條建議)`
+        `✅ 建議生成完成 (${duration}ms, ${result.metadata.total_recommendations} 條建議)`,
       );
 
       return result;
     } catch (error) {
-      console.error('❌ 建議生成失敗:', error.message);
+      console.error("❌ 建議生成失敗:", error.message);
       throw error;
     }
   }
@@ -240,8 +270,16 @@ class LegalOrchestrator {
   /**
    * 合成最終報告
    */
-  async synthesizeReport(terms, risks, compliance, recommendations, contractType, timestamp, outputDir) {
-    console.log('📄 生成最終審查報告...');
+  async synthesizeReport(
+    terms,
+    risks,
+    compliance,
+    recommendations,
+    contractType,
+    timestamp,
+    outputDir,
+  ) {
+    console.log("📄 生成最終審查報告...");
 
     const report = this.generateReportMarkdown(
       terms,
@@ -249,7 +287,7 @@ class LegalOrchestrator {
       compliance,
       recommendations,
       contractType,
-      timestamp
+      timestamp,
     );
 
     const reportFile = path.join(outputDir, `review_report_${timestamp}.md`);
@@ -262,16 +300,27 @@ class LegalOrchestrator {
   /**
    * 生成報告 Markdown 內容
    */
-  generateReportMarkdown(terms, risks, compliance, recommendations, contractType, timestamp) {
-    const highRisks = risks.risks.filter((r) => r.severity === 'HIGH');
-    const mediumRisks = risks.risks.filter((r) => r.severity === 'MEDIUM');
-    const criticalCompliance = compliance.compliance_checks.filter((c) => c.severity === 'CRITICAL');
-    const highCompliance = compliance.compliance_checks.filter((c) => c.severity === 'HIGH');
+  generateReportMarkdown(
+    terms,
+    risks,
+    compliance,
+    recommendations,
+    contractType,
+    timestamp,
+  ) {
+    const highRisks = risks.risks.filter((r) => r.severity === "HIGH");
+    const mediumRisks = risks.risks.filter((r) => r.severity === "MEDIUM");
+    const criticalCompliance = compliance.compliance_checks.filter(
+      (c) => c.severity === "CRITICAL",
+    );
+    const highCompliance = compliance.compliance_checks.filter(
+      (c) => c.severity === "HIGH",
+    );
 
     let markdown = `# 合同審查報告
 
 ## 📋 報告信息
-- **審查時間**: ${new Date().toLocaleString('zh-TW')}
+- **審查時間**: ${new Date().toLocaleString("zh-TW")}
 - **合同類型**: ${contractType}
 - **審查員**: AI Legal Reviewer v1.0
 - **狀態**: ⏳ 待律師審批
@@ -286,7 +335,7 @@ class LegalOrchestrator {
 | **合規性問題** | ${compliance.metadata.total_issues} (CRITICAL: ${compliance.metadata.critical}, HIGH: ${compliance.metadata.high}, MEDIUM: ${compliance.metadata.medium}) |
 | **建議總數** | ${recommendations.metadata.total_recommendations} |
 | **緊急行動** | ${recommendations.metadata.critical_actions} |
-| **當事人** | ${terms.basic_info.parties.join(', ')} |
+| **當事人** | ${terms.basic_info.parties.join(", ")} |
 | **管轄權** | ${terms.basic_info.jurisdiction} |
 
 ---
@@ -299,7 +348,7 @@ class LegalOrchestrator {
     highRisks.forEach((risk) => {
       markdown += `
 #### ${risk.risk_id}: ${risk.description}
-- **當前狀態**: ${risk.current_value || 'Not specified'}
+- **當前狀態**: ${risk.current_value || "Not specified"}
 - **推薦改正**: ${risk.recommended_value || risk.recommendation}
 - **影響**: ${risk.impact}
 `;
@@ -325,7 +374,7 @@ class LegalOrchestrator {
 
 ## 📋 執行摘要
 
-${recommendations.metadata ? recommendations.executive_summary : ''}
+${recommendations.metadata ? recommendations.executive_summary : ""}
 
 ---
 
@@ -350,23 +399,23 @@ ${this.formatComplianceImprovements(recommendations.compliance_improvements)}
 ## 📅 實施計劃
 
 ### Phase 1: 立即行動 (This Week)
-${recommendations.implementation_plan?.phase_1?.tasks?.map((t) => `- ${t}`).join('\n') || '- 無'}
+${recommendations.implementation_plan?.phase_1?.tasks?.map((t) => `- ${t}`).join("\n") || "- 無"}
 
 ### Phase 2: 協商階段 (Next 2 Weeks)
-${recommendations.implementation_plan?.phase_2?.tasks?.map((t) => `- ${t}`).join('\n') || '- 無'}
+${recommendations.implementation_plan?.phase_2?.tasks?.map((t) => `- ${t}`).join("\n") || "- 無"}
 
 ### Phase 3: 最終審查 (Week 3)
-${recommendations.implementation_plan?.phase_3?.tasks?.map((t) => `- ${t}`).join('\n') || '- 無'}
+${recommendations.implementation_plan?.phase_3?.tasks?.map((t) => `- ${t}`).join("\n") || "- 無"}
 
 ---
 
 ## 🔍 詳細分析結果
 
 ### 提取的關鍵條款
-- **保密期限**: ${terms.key_terms?.confidentiality_duration?.description || 'Not specified'}
-- **責任上限**: ${terms.key_terms?.liability_cap?.description || 'Not specified'}
-- **終止通知期**: ${terms.key_terms?.termination_clause?.notice_period || 'Not specified'} ${terms.key_terms?.termination_clause?.notice_unit || ''}
-- **支付條款**: ${terms.key_terms?.payment_terms?.description || 'Not specified'}
+- **保密期限**: ${terms.key_terms?.confidentiality_duration?.description || "Not specified"}
+- **責任上限**: ${terms.key_terms?.liability_cap?.description || "Not specified"}
+- **終止通知期**: ${terms.key_terms?.termination_clause?.notice_period || "Not specified"} ${terms.key_terms?.termination_clause?.notice_unit || ""}
+- **支付條款**: ${terms.key_terms?.payment_terms?.description || "Not specified"}
 
 ### 風險統計
 - 總計: ${risks.metadata.total_risks} 項
@@ -420,10 +469,10 @@ ${recommendations.implementation_plan?.phase_3?.tasks?.map((t) => `- ${t}`).join
    */
   formatCriticalActions(actions) {
     if (!actions || actions.length === 0) {
-      return '沒有緊急行動需要';
+      return "沒有緊急行動需要";
     }
 
-    let formatted = '';
+    let formatted = "";
     actions.slice(0, 5).forEach((action, index) => {
       formatted += `
 ### ${index + 1}. ${action.title}
@@ -431,7 +480,7 @@ ${recommendations.implementation_plan?.phase_3?.tasks?.map((t) => `- ${t}`).join
 - **當前**: ${action.current_state}
 - **推薦**: ${action.recommended_state}
 - **行動項**:
-${action.action_items?.map((item) => `  - ${item}`).join('\n')}
+${action.action_items?.map((item) => `  - ${item}`).join("\n")}
 - **期限**: ${action.timeline}
 `;
     });
@@ -444,10 +493,10 @@ ${action.action_items?.map((item) => `  - ${item}`).join('\n')}
    */
   formatNegotiationPoints(points) {
     if (!points || points.length === 0) {
-      return '沒有談判要點';
+      return "沒有談判要點";
     }
 
-    let formatted = '';
+    let formatted = "";
     points.forEach((point, index) => {
       formatted += `
 ### ${index + 1}. ${point.topic}
@@ -466,10 +515,10 @@ ${action.action_items?.map((item) => `  - ${item}`).join('\n')}
    */
   formatComplianceImprovements(improvements) {
     if (!improvements || improvements.length === 0) {
-      return '沒有合規性改進需要';
+      return "沒有合規性改進需要";
     }
 
-    let formatted = '';
+    let formatted = "";
     improvements.slice(0, 3).forEach((imp, index) => {
       formatted += `
 ### ${index + 1}. ${imp.category}
@@ -486,13 +535,13 @@ ${action.action_items?.map((item) => `  - ${item}`).join('\n')}
    * 歸檔結果
    */
   async archiveResults(outputDir, timestamp, contractType) {
-    console.log('📂 歸檔審查結果...');
+    console.log("📂 歸檔審查結果...");
 
     const archiveDir = path.join(
       outputDir,
-      'archive',
+      "archive",
       timestamp.substring(0, 7),
-      `contract-${contractType}-${timestamp}`
+      `contract-${contractType}-${timestamp}`,
     );
 
     try {
@@ -506,7 +555,9 @@ ${action.action_items?.map((item) => `  - ${item}`).join('\n')}
       files.forEach((file) => {
         if (
           file.includes(timestamp) &&
-          (file.endsWith('.json') || file.endsWith('.md') || file.endsWith('.txt'))
+          (file.endsWith(".json") ||
+            file.endsWith(".md") ||
+            file.endsWith(".txt"))
         ) {
           const src = path.join(outputDir, file);
           const dst = path.join(archiveDir, file);
@@ -527,19 +578,19 @@ ${action.action_items?.map((item) => `  - ${item}`).join('\n')}
 
 // 如果作為獨立腳本運行
 if (require.main === module) {
-  const contractPath = process.argv[2] || 'contract_text.txt';
-  const contractType = process.argv[3] || 'Other';
+  const contractPath = process.argv[2] || "contract_text.txt";
+  const contractType = process.argv[3] || "Other";
 
   const orchestrator = new LegalOrchestrator();
   orchestrator
     .orchestrate(contractPath, contractType)
     .then((result) => {
-      console.log('\n🎉 工作流程成功完成!');
+      console.log("\n🎉 工作流程成功完成!");
       console.log(JSON.stringify(result, null, 2));
       process.exit(0);
     })
     .catch((error) => {
-      console.error('\n❌ 工作流程失敗:', error.message);
+      console.error("\n❌ 工作流程失敗:", error.message);
       process.exit(1);
     });
 }

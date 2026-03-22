@@ -42,16 +42,16 @@
 
 | 測試套件 | 測試數量 | 通過 | 失敗 | 狀態 |
 |----------|---------|------|------|------|
-| contract-terms-extractor.test.js | 依套件分配 | 全通過 | 0 | PASS |
-| contract-risk-analyzer.test.js | 依套件分配 | 全通過 | 0 | PASS |
-| contract-compliance-checker.test.js | 依套件分配 | 全通過 | 0 | PASS |
-| contract-recommendations-generator.test.js | 依套件分配 | 全通過 | 0 | PASS |
+| contract-terms-extractor.test.js | 51 | 51 | 0 | PASS |
+| contract-risk-analyzer.test.js | 29 | 29 | 0 | PASS |
+| contract-compliance-checker.test.js | 42 | 42 | 0 | PASS |
+| contract-recommendations-generator.test.js | 31 | 31 | 0 | PASS |
 
 ### 2.2 集成測試
 
 | 測試套件 | 測試數量 | 通過 | 失敗 | 狀態 |
 |----------|---------|------|------|------|
-| legal-orchestrator.test.js | 依套件分配 | 全通過 | 0 | PASS |
+| legal-orchestrator.test.js | 30 | 30 | 0 | PASS |
 
 **集成測試涵蓋場景**：
 - 完整端到端工作流程（NDA、SLA、Purchase 合同類型）
@@ -181,7 +181,7 @@
 
 **通過率**：7/7（100%）
 
-**備註**：`.claude/settings.json` 中的 `hooks` 區塊目前為空物件 `{}`。Hook 配置定義於 `departments/legal/config.json` 中，包含 PostToolUse（JSON 驗證）和 PreToolUse（刪除操作警告），但尚未同步至全域設定。
+**備註**：`.claude/settings.json` 中的 `hooks` 區塊已同步配置 PostToolUse（JSON 驗證）和 PreToolUse（刪除操作警告），與 `departments/legal/config.json` 中的定義一致。
 
 ### 5.2 依賴安全性
 
@@ -273,7 +273,7 @@ npm audit: found 0 vulnerabilities
 | 風險 | 等級 | 說明 | 緩解措施 |
 |------|------|------|---------|
 | 使用者接受度 | MEDIUM | 律師評分和滿意度指標尚未收集 | 安排 Pilot 使用者試用並收集回饋 |
-| Hook 配置未同步 | LOW | `.claude/settings.json` 中 hooks 為空 | 將 `departments/legal/config.json` 中的 hook 配置同步至全域設定 |
+| Hook 配置已同步 | — | `.claude/settings.json` 中 hooks 已配置 | 已完成 |
 | PDF 提取整合 | MEDIUM | `pdf-extractor.sh` 存在但尚未與主流程整合測試 | 安排 PDF 端到端測試 |
 
 ### 7.3 已知限制

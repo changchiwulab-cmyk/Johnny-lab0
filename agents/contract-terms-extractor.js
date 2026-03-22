@@ -3,13 +3,13 @@
  * 從合同文本中提取關鍵條款和結構化信息
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 class ContractTermsExtractor {
   constructor() {
-    this.name = 'ContractTermsExtractor';
-    this.version = '1.0.0';
+    this.name = "ContractTermsExtractor";
+    this.version = "1.0.0";
   }
 
   /**
@@ -18,7 +18,7 @@ class ContractTermsExtractor {
    * @param {string} contractType - 合同類型 (NDA, SLA, MSA 等)
    * @returns {Object} 提取的條款結構化數據
    */
-  async extract(contractText, contractType = 'Other') {
+  async extract(contractText, contractType = "Other") {
     console.log(`🔍 [${this.name}] 開始提取合同條款...`);
 
     const startTime = Date.now();
@@ -30,13 +30,13 @@ class ContractTermsExtractor {
           extraction_timestamp: new Date().toISOString(),
           confidence: 0.85,
           extracted_by: this.name,
-          version: this.version
+          version: this.version,
         },
         basic_info: this.extractBasicInfo(contractText),
         key_terms: this.extractKeyTerms(contractText, contractType),
         obligations: this.extractObligations(contractText),
         definitions: this.extractDefinitions(contractText),
-        extraction_status: 'completed'
+        extraction_status: "completed",
       };
 
       const duration = Date.now() - startTime;
@@ -55,10 +55,10 @@ class ContractTermsExtractor {
   extractBasicInfo(text) {
     const info = {
       parties: this.extractParties(text),
-      effective_date: this.extractDate(text, 'effective|Effective'),
-      expiration_date: this.extractDate(text, 'expiration|expir|term|期限'),
+      effective_date: this.extractDate(text, "effective|Effective"),
+      expiration_date: this.extractDate(text, "expiration|expir|term|期限"),
       jurisdiction: this.extractJurisdiction(text),
-      governing_law: this.extractGoverningLaw(text)
+      governing_law: this.extractGoverningLaw(text),
     };
 
     return info;
@@ -73,17 +73,17 @@ class ContractTermsExtractor {
     const patterns = [
       /BETWEEN\s+(.+?)\s+(?:AND|and)/,
       /Party\s+(?:A|One)\s*:\s*(.+?)(?:\n|;)/,
-      /Party\s+(?:B|Two)\s*:\s*(.+?)(?:\n|;)/
+      /Party\s+(?:B|Two)\s*:\s*(.+?)(?:\n|;)/,
     ];
 
-    patterns.forEach(pattern => {
+    patterns.forEach((pattern) => {
       const matches = text.match(pattern);
       if (matches && matches[1]) {
         parties.push(matches[1].trim());
       }
     });
 
-    return parties.length > 0 ? parties : ['Party to be identified'];
+    return parties.length > 0 ? parties : ["Party to be identified"];
   }
 
   /**
@@ -92,7 +92,7 @@ class ContractTermsExtractor {
   extractDate(text, keyword) {
     const pattern = new RegExp(
       `(?:${keyword})[^:]*:\\s*([\\w\\s,]+\\d{1,2},?\\s*\\d{4}|\\d{4}-\\d{2}-\\d{2})`,
-      'i'
+      "i",
     );
     const match = text.match(pattern);
     return match ? match[1].trim() : null;
@@ -102,22 +102,30 @@ class ContractTermsExtractor {
    * 提取管轄權
    */
   extractJurisdiction(text) {
-    const jurisdictions = ['California', 'New York', 'Delaware', 'Texas', 'Florida', 'Illinois'];
+    const jurisdictions = [
+      "California",
+      "New York",
+      "Delaware",
+      "Texas",
+      "Florida",
+      "Illinois",
+    ];
     for (const jurisdiction of jurisdictions) {
       if (text.includes(jurisdiction)) {
         return jurisdiction;
       }
     }
-    return 'Unknown';
+    return "Unknown";
   }
 
   /**
    * 提取準據法
    */
   extractGoverningLaw(text) {
-    const pattern = /(?:governed|governed by|准据法)\s*(?:of|by)?\s*(?:the\s+)?([^,\n]+)/i;
+    const pattern =
+      /(?:governed|governed by|准据法)\s*(?:of|by)?\s*(?:the\s+)?([^,\n]+)/i;
     const match = text.match(pattern);
-    return match ? match[1].trim() : 'Not specified';
+    return match ? match[1].trim() : "Not specified";
   }
 
   /**
@@ -133,13 +141,13 @@ class ContractTermsExtractor {
     terms.payment_terms = this.extractPaymentTerms(text);
 
     // 根據合同類型提取特定條款
-    if (contractType === 'NDA') {
+    if (contractType === "NDA") {
       terms.permitted_use = this.extractPermittedUse(text);
       terms.return_of_information = this.extractReturnOfInformation(text);
-    } else if (contractType === 'SLA') {
+    } else if (contractType === "SLA") {
       terms.service_level_objectives = this.extractSLO(text);
       terms.uptime_guarantee = this.extractUptimeGuarantee(text);
-    } else if (contractType === 'Purchase') {
+    } else if (contractType === "Purchase") {
       terms.warranty = this.extractWarranty(text);
       terms.delivery_terms = this.extractDeliveryTerms(text);
     }
@@ -153,7 +161,7 @@ class ContractTermsExtractor {
   extractConfidentialityPeriod(text) {
     const patterns = [
       /confidential.*?(\d+)\s*(?:year|yr|年)/i,
-      /(?:during|for)\s+(?:the\s+)?(?:period\s+)?of\s+(\d+)\s*year/i
+      /(?:during|for)\s+(?:the\s+)?(?:period\s+)?of\s+(\d+)\s*year/i,
     ];
 
     for (const pattern of patterns) {
@@ -162,15 +170,15 @@ class ContractTermsExtractor {
         return {
           description: `${match[1]} years from disclosure`,
           numeric_value: parseInt(match[1]),
-          unit: 'years'
+          unit: "years",
         };
       }
     }
 
     return {
-      description: 'Not specified',
+      description: "Not specified",
       numeric_value: null,
-      unit: 'years'
+      unit: "years",
     };
   }
 
@@ -181,25 +189,25 @@ class ContractTermsExtractor {
     const patterns = [
       /liability.*?cap.*?\$?(\d+(?:,\d{3})*)/i,
       /(?:not\s+)?exceed.*?\$?(\d+(?:,\d{3})*)/i,
-      /limitation.*?liability.*?\$?(\d+(?:,\d{3})*)/i
+      /limitation.*?liability.*?\$?(\d+(?:,\d{3})*)/i,
     ];
 
     for (const pattern of patterns) {
       const match = text.match(pattern);
       if (match) {
-        const value = parseInt(match[1].replace(/,/g, ''));
+        const value = parseInt(match[1].replace(/,/g, ""));
         return {
           description: `$${value.toLocaleString()}`,
           numeric_value: value,
-          currency: 'USD'
+          currency: "USD",
         };
       }
     }
 
     return {
-      description: 'Not specified',
+      description: "Not specified",
       numeric_value: null,
-      currency: 'USD'
+      currency: "USD",
     };
   }
 
@@ -214,14 +222,14 @@ class ContractTermsExtractor {
       return {
         description: `Either party may terminate with ${match[1]} days notice`,
         notice_period: parseInt(match[1]),
-        notice_unit: 'days'
+        notice_unit: "days",
       };
     }
 
     return {
-      description: 'Not explicitly stated',
+      description: "Not explicitly stated",
       notice_period: null,
-      notice_unit: 'days'
+      notice_unit: "days",
     };
   }
 
@@ -235,11 +243,11 @@ class ContractTermsExtractor {
     if (match) {
       return {
         description: `Payment due within ${match[1]} days`,
-        payment_days: parseInt(match[1])
+        payment_days: parseInt(match[1]),
       };
     }
 
-    return { description: 'Not specified' };
+    return { description: "Not specified" };
   }
 
   /**
@@ -247,9 +255,9 @@ class ContractTermsExtractor {
    */
   extractPermittedUse(text) {
     if (text.match(/permitted.*use|use.*may.*only/i)) {
-      return { description: 'Permitted uses are limited' };
+      return { description: "Permitted uses are limited" };
     }
-    return { description: 'Not specified' };
+    return { description: "Not specified" };
   }
 
   /**
@@ -257,23 +265,24 @@ class ContractTermsExtractor {
    */
   extractReturnOfInformation(text) {
     if (text.match(/return|destroy|retain/i)) {
-      return { description: 'Information must be returned or destroyed' };
+      return { description: "Information must be returned or destroyed" };
     }
-    return { description: 'Not specified' };
+    return { description: "Not specified" };
   }
 
   /**
    * 提取服務水平目標 (SLA)
    */
   extractSLO(text) {
-    const pattern = /slo|service.*level.*objective|response.*time\s*[:\s]*(\d+)\s*(?:hour|minute)/i;
+    const pattern =
+      /slo|service.*level.*objective|response.*time\s*[:\s]*(\d+)\s*(?:hour|minute)/i;
     const match = text.match(pattern);
 
     if (match) {
       return { description: `Response time: ${match[1]} hours/minutes` };
     }
 
-    return { description: 'Not specified' };
+    return { description: "Not specified" };
   }
 
   /**
@@ -287,7 +296,7 @@ class ContractTermsExtractor {
       return { description: `${match[1]} uptime guarantee` };
     }
 
-    return { description: 'Not specified' };
+    return { description: "Not specified" };
   }
 
   /**
@@ -295,9 +304,9 @@ class ContractTermsExtractor {
    */
   extractWarranty(text) {
     if (text.match(/warrant|guarantee/i)) {
-      return { description: 'Warranty provided' };
+      return { description: "Warranty provided" };
     }
-    return { description: 'No warranty specified' };
+    return { description: "No warranty specified" };
   }
 
   /**
@@ -311,7 +320,7 @@ class ContractTermsExtractor {
       return { description: `Delivery within ${match[1]} days/weeks` };
     }
 
-    return { description: 'Not specified' };
+    return { description: "Not specified" };
   }
 
   /**
@@ -321,18 +330,21 @@ class ContractTermsExtractor {
     const obligations = [];
 
     const patterns = [
-      { keyword: 'confidentiality|保密', obligation: 'Maintain confidentiality' },
-      { keyword: 'protect|保護', obligation: 'Protect information' },
-      { keyword: 'indemnif|賠償', obligation: 'Indemnification' },
-      { keyword: 'insurance|保險', obligation: 'Maintain insurance' },
-      { keyword: 'compliance|合規', obligation: 'Ensure compliance' }
+      {
+        keyword: "confidentiality|保密",
+        obligation: "Maintain confidentiality",
+      },
+      { keyword: "protect|保護", obligation: "Protect information" },
+      { keyword: "indemnif|賠償", obligation: "Indemnification" },
+      { keyword: "insurance|保險", obligation: "Maintain insurance" },
+      { keyword: "compliance|合規", obligation: "Ensure compliance" },
     ];
 
     patterns.forEach(({ keyword, obligation }) => {
-      if (new RegExp(keyword, 'i').test(text)) {
+      if (new RegExp(keyword, "i").test(text)) {
         obligations.push({
           description: obligation,
-          severity: 'MEDIUM'
+          severity: "MEDIUM",
         });
       }
     });
@@ -347,7 +359,8 @@ class ContractTermsExtractor {
     const definitions = {};
 
     // 簡單的定義提取（實際應用需更複雜的邏輯）
-    const pattern = /"([^"]+)"\s*(?:means|shall mean|定義為)\s*(.+?)(?:\.|;|\n)/gi;
+    const pattern =
+      /"([^"]+)"\s*(?:means|shall mean|定義為)\s*(.+?)(?:\.|;|\n)/gi;
     let match;
 
     while ((match = pattern.exec(text)) !== null) {
@@ -360,16 +373,22 @@ class ContractTermsExtractor {
 
 // 如果作為獨立腳本運行
 if (require.main === module) {
-  const contractText = fs.readFileSync(process.argv[2] || 'contract_text.txt', 'utf-8');
-  const contractType = process.argv[3] || 'Other';
+  const contractText = fs.readFileSync(
+    process.argv[2] || "contract_text.txt",
+    "utf-8",
+  );
+  const contractType = process.argv[3] || "Other";
 
   const extractor = new ContractTermsExtractor();
   extractor.extract(contractText, contractType).then((result) => {
-    console.log('\n📋 提取結果:');
+    console.log("\n📋 提取結果:");
     console.log(JSON.stringify(result, null, 2));
 
     // 保存到文件
-    const outputFile = path.join(path.dirname(process.argv[2] || '.'), 'terms.json');
+    const outputFile = path.join(
+      path.dirname(process.argv[2] || "."),
+      "terms.json",
+    );
     fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
     console.log(`\n💾 結果已保存到: ${outputFile}`);
   });
