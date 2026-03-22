@@ -1,0 +1,138 @@
+{
+  "description": "法務部門工作流自動化鉤子配置",
+  "version": "1.0.0",
+  "department": "legal",
+  "PostToolUse": [
+    {
+      "matcher": "Write",
+      "when": "file_path_contains: departments/legal/contracts",
+      "description": "當合同文件上傳到法務部門時，自動提取文本並啟動審查",
+      "hooks": [
+        {
+          "type": "command",
+          "description": "自動提取 PDF 文本",
+          "command": "bash tools/pdf-extractor.sh",
+          "statusMessage": "📄 提取合同文本...",
+          "timeout": 30,
+          "on_success": "系統將自動啟動多代理審查流程"
+        },
+        {
+          "type": "command",
+          "description": "啟動編排層進行多代理審查",
+          "command": "node agents/legal-orchestrator.js",
+          "statusMessage": "🔄 啟動多代理審查工作流...",
+          "timeout": 120,
+          "on_success": "審查完成，已生成報告"
+        }
+      ]
+    },
+    {
+      "matcher": "Edit",
+      "when": "file_path_contains: departments/legal",
+      "description": "當編輯法務文件時，驗證 JSON 格式和內容",
+      "hooks": [
+        {
+          "type": "command",
+          "description": "驗證 JSON 格式",
+          "command": "jq . /dev/stdin > /dev/null 2>&1 && echo '✅ JSON 驗證通過' || echo '❌ JSON 格式錯誤'",
+          "statusMessage": "🔍 驗證 JSON 格式...",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "PreToolUse": [
+    {
+      "matcher": "Bash",
+      "when": "command_contains: rm|delete|drop",
+      "description": "當執行刪除操作時，提示確認",
+      "hooks": [
+        {
+          "type": "system_message",
+          "description": "刪除合同檔案需要人類確認",
+          "message": "⚠️ 警告：您即將執行刪除操作。法務檔案刪除需人類確認以防止數據丟失。"
+        }
+      ]
+    },
+    {
+      "matcher": "Bash",
+      "when": "command_contains: git reset|git rebase",
+      "description": "防止危險的 git 操作",
+      "hooks": [
+        {
+          "type": "system_message",
+          "description": "防止重寫歷史",
+          "message": "⚠️ 警告：該操作可能會改寫 git 歷史。請確認此操作。"
+        }
+      ]
+    }
+  ],
+  "workflow_automation": {
+    "contract_upload": {
+      "trigger": "Write",
+      "pattern": "departments/legal/contracts/*.pdf|*.docx|*.txt",
+      "steps": [
+        {
+          "step": 1,
+          "action": "extract_text",
+          "tool": "tools/pdf-extractor.sh",
+          "timeout_ms": 30000
+        },
+        {
+          "step": 2,
+          "action": "orchestrate_review",
+          "tool": "agents/legal-orchestrator.js",
+          "timeout_ms": 120000
+        },
+        {
+          "step": 3,
+          "action": "generate_report",
+          "generates": "review_report_YYYY-MM-DD.md",
+          "timeout_ms": 30000
+        },
+        {
+          "step": 4,
+          "action": "archive_results",
+          "destination": "departments/legal/archive/",
+          "timeout_ms": 10000
+        }
+      ]
+    }
+  },
+  "automation_rules": {
+    "auto_extraction": {
+      "enabled": true,
+      "description": "自動提取上傳的合同文本",
+      "file_types": ["pdf", "docx", "txt"]
+    },
+    "auto_review": {
+      "enabled": true,
+      "description": "自動執行多代理審查",
+      "parallel_agents": 4,
+      "timeout_ms": 120000
+    },
+    "auto_archival": {
+      "enabled": true,
+      "description": "自動歸檔完成的審查結果",
+      "archive_path": "departments/legal/archive/YYYY-MM/contract-type-YYYY-MM-DD/"
+    },
+    "notification": {
+      "enabled": true,
+      "notify_on": ["review_complete", "high_risk_detected", "error"],
+      "channels": ["console", "log"]
+    }
+  },
+  "safety_checks": {
+    "prevent_dangerous_operations": [
+      "rm -rf departments/legal/*",
+      "git reset --hard",
+      "git push --force",
+      "delete *.json"
+    ],
+    "require_confirmation": [
+      "Deleting contract files",
+      "Modifying config files",
+      "Git destructive operations"
+    ]
+  }
+}

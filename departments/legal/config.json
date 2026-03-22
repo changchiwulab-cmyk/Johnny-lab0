@@ -1,0 +1,120 @@
+{
+  "department": "legal",
+  "role": "contract_reviewer",
+  "description": "法務部門合同自動審查系統配置",
+  "version": "1.0.0",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Bash(pdftotext:*)",
+      "Bash(grep:*)",
+      "Bash(jq:*)",
+      "Edit(.md|.json|.txt)",
+      "Glob"
+    ],
+    "ask": [
+      "Write(/departments/legal/archive/*)",
+      "Bash(git:commit)",
+      "Bash(git:push)",
+      "Edit(settings.json)"
+    ],
+    "deny": [
+      "Write(/etc/*)",
+      "Write(/.env*)",
+      "Write(/.claude/settings.json)",
+      "Bash(sudo:*)",
+      "Bash(rm:*.js|*.ts)",
+      "Bash(git:reset|git:rebase)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "when": "file_matches:\\.json$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq . /dev/stdin > /dev/null 2>&1 && echo '✅ JSON 驗證通過' || echo '❌ JSON 格式錯誤'",
+            "statusMessage": "🔍 驗證 JSON 格式...",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "when": "command_contains: rm|delete|drop",
+        "hooks": [
+          {
+            "type": "system_message",
+            "message": "⚠️ 警告：即將執行刪除操作，法務檔案刪除需人類確認"
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "DEPARTMENT": "legal",
+    "WORKFLOW_MODE": "contract-review",
+    "AUTO_REVIEW": "enabled",
+    "RISK_THRESHOLD": "MEDIUM",
+    "ORCHESTRATOR_TIMEOUT_MS": 120000,
+    "MAX_PARALLEL_AGENTS": 4
+  },
+  "workflow": {
+    "stages": [
+      {
+        "name": "contract_upload",
+        "description": "合同上傳與初始化",
+        "tools": ["Read", "Write"],
+        "timeout_ms": 10000
+      },
+      {
+        "name": "text_extraction",
+        "description": "PDF 文本提取",
+        "tools": ["Bash(pdftotext:*)"],
+        "timeout_ms": 30000
+      },
+      {
+        "name": "agent_orchestration",
+        "description": "多代理並行審查",
+        "tools": ["Bash(node:*)"],
+        "timeout_ms": 120000,
+        "parallel_agents": 4
+      },
+      {
+        "name": "result_synthesis",
+        "description": "結果合成與報告生成",
+        "tools": ["Edit", "Write"],
+        "timeout_ms": 30000
+      },
+      {
+        "name": "human_review",
+        "description": "律師檢查點",
+        "tools": ["Read"],
+        "requires_approval": true
+      }
+    ]
+  },
+  "success_metrics": {
+    "contract_review_cycle": {
+      "baseline_days": 3,
+      "target_hours": 4
+    },
+    "accuracy_targets": {
+      "term_extraction": 0.85,
+      "risk_detection": 0.90,
+      "compliance_check": 0.90
+    },
+    "system_reliability": {
+      "availability_target": 0.99,
+      "hook_success_rate": 0.99
+    },
+    "user_satisfaction": {
+      "lawyer_rating_target": 4.0,
+      "overall_satisfaction": 4.5
+    }
+  }
+}
