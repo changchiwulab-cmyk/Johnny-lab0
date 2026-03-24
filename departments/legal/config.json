@@ -3,6 +3,8 @@
   "role": "contract_reviewer",
   "description": "法務部門合同自動審查系統配置",
   "version": "1.0.0",
+  "trend7_pilot": true,
+  "pilot_confirmed_date": "2026-03-24",
   "permissions": {
     "allow": [
       "Read",
