@@ -205,11 +205,13 @@ class LegalOrchestrator {
         contractText,
         contractType,
       );
+      this._agentDurations = this._agentDurations || {};
+      this._agentDurations.termsExtractor = Date.now() - termsStartTime;
       fs.writeFileSync(
         path.join(outputDir, `terms_${this.timestamp}.json`),
         JSON.stringify(terms, null, 2),
       );
-      console.log(`    ✅ 條款提取完成 (${Date.now() - termsStartTime}ms)`);
+      console.log(`    ✅ 條款提取完成 (${this._agentDurations.termsExtractor}ms)`);
 
       // Step B: 並行執行風險分析和合規檢查（共用已提取的條款）
       console.log("  └─ 並行啟動風險分析 + 合規檢查...");
@@ -248,6 +250,8 @@ class LegalOrchestrator {
       );
 
       const duration = Date.now() - startTime;
+      this._agentDurations = this._agentDurations || {};
+      this._agentDurations.riskAnalyzer = duration;
       console.log(
         `    ✅ 風險分析完成 (${duration}ms, ${result.metadata.total_risks} 項風險)`,
       );
@@ -278,6 +282,8 @@ class LegalOrchestrator {
       );
 
       const duration = Date.now() - startTime;
+      this._agentDurations = this._agentDurations || {};
+      this._agentDurations.complianceChecker = duration;
       console.log(
         `    ✅ 合規檢查完成 (${duration}ms, ${result.metadata.total_issues} 項問題)`,
       );
@@ -325,6 +331,8 @@ class LegalOrchestrator {
       fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
 
       const duration = Date.now() - startTime;
+      this._agentDurations = this._agentDurations || {};
+      this._agentDurations.recommendationsGenerator = duration;
       console.log(
         `✅ 建議生成完成 (${duration}ms, ${result.metadata.total_recommendations} 條建議)`,
       );
@@ -652,7 +660,10 @@ ${action.action_items?.map((item) => `  - ${item}`).join("\n")}
         type: checkpoint.reason,
         severity,
         source: "automated_review",
-        details: { checkpoints: checkpoint.checkpoints },
+        details: {
+          checkpoints: checkpoint.checkpoints,
+          totalRisks: risks?.metadata?.total_risks || 0,
+        },
       });
     } catch {
       return null;
@@ -664,38 +675,88 @@ ${action.action_items?.map((item) => `  - ${item}`).join("\n")}
    */
   recordAgentMetrics(terms, risks, compliance, recommendations) {
     if (!this.trustMetrics) return;
+    const durations = this._agentDurations || {};
     try {
       this.trustMetrics.recordExecution("termsExtractor", {
         success: terms?.extraction_status === "completed",
-        duration_ms: 0,
-        outputQuality: terms?.basic_info ? 0.9 : 0.3,
+        duration_ms: durations.termsExtractor || 0,
+        outputQuality: this.calculateTermsQuality(terms),
         humanOverrideRequired: false,
         escalated: false,
       });
       this.trustMetrics.recordExecution("riskAnalyzer", {
         success: risks?.analysis_status === "completed",
-        duration_ms: 0,
-        outputQuality: risks?.metadata ? 0.9 : 0.3,
+        duration_ms: durations.riskAnalyzer || 0,
+        outputQuality: this.calculateRisksQuality(risks),
         humanOverrideRequired: false,
         escalated: false,
       });
       this.trustMetrics.recordExecution("complianceChecker", {
         success: compliance?.check_status === "completed",
-        duration_ms: 0,
-        outputQuality: compliance?.metadata ? 0.9 : 0.3,
+        duration_ms: durations.complianceChecker || 0,
+        outputQuality: this.calculateComplianceQuality(compliance),
         humanOverrideRequired: false,
         escalated: false,
       });
       this.trustMetrics.recordExecution("recommendationsGenerator", {
         success: !!recommendations?.metadata,
-        duration_ms: 0,
-        outputQuality: recommendations?.metadata ? 0.9 : 0.3,
+        duration_ms: durations.recommendationsGenerator || 0,
+        outputQuality: this.calculateRecommendationsQuality(recommendations),
         humanOverrideRequired: false,
         escalated: false,
       });
     } catch {
       // 信任度記錄失敗不影響主流程
     }
+  }
+
+  /**
+   * 計算條款提取品質 (0-1)
+   * 基於：基本資訊完整度 + 關鍵條款提取數量
+   */
+  calculateTermsQuality(terms) {
+    if (!terms || !terms.basic_info) return 0.1;
+    let score = 0.5; // 有 basic_info 基底分
+    if (terms.basic_info.parties?.length > 0) score += 0.15;
+    if (terms.basic_info.jurisdiction) score += 0.1;
+    if (terms.key_terms && Object.keys(terms.key_terms).length >= 3) score += 0.25;
+    return Math.min(1, score);
+  }
+
+  /**
+   * 計算風險分析品質 (0-1)
+   * 基於：是否有 metadata + 風險分級分佈合理性
+   */
+  calculateRisksQuality(risks) {
+    if (!risks || !risks.metadata) return 0.1;
+    let score = 0.5;
+    if (risks.risks?.length > 0) score += 0.2;
+    if (risks.metadata.high_severity > 0 || risks.metadata.total_risks <= 5) score += 0.15;
+    if (risks.metadata.total_risks > 0) score += 0.15;
+    return Math.min(1, score);
+  }
+
+  /**
+   * 計算合規檢查品質 (0-1)
+   */
+  calculateComplianceQuality(compliance) {
+    if (!compliance || !compliance.metadata) return 0.1;
+    let score = 0.5;
+    if (compliance.compliance_checks?.length > 0) score += 0.25;
+    if (compliance.metadata.total_issues > 0) score += 0.25;
+    return Math.min(1, score);
+  }
+
+  /**
+   * 計算建議生成品質 (0-1)
+   */
+  calculateRecommendationsQuality(recommendations) {
+    if (!recommendations || !recommendations.metadata) return 0.1;
+    let score = 0.5;
+    if (recommendations.metadata.total_recommendations > 0) score += 0.2;
+    if (recommendations.implementation_plan) score += 0.15;
+    if (recommendations.next_steps?.length > 0) score += 0.15;
+    return Math.min(1, score);
   }
 
   /**

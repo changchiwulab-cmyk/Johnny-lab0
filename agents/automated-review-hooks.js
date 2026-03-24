@@ -55,7 +55,6 @@ class AutomatedReviewHooks {
     );
     const flags = [];
     const triggeredCheckpoints = [];
-    const escalations = [];
 
     // 檢查 mandatory checkpoints
     const mandatory = this.config.checkpoints?.mandatory || [];

@@ -87,7 +87,7 @@ class EscalationManager {
           highSeverityCount:
             issue.severity === "HIGH" || issue.severity === "CRITICAL" ? 2 : 0,
           criticalComplianceCount: issue.severity === "CRITICAL" ? 1 : 0,
-          totalRisks: 3,
+          totalRisks: issue.details?.totalRisks || 0,
           contractType: issue.details?.contractType || "Default",
         };
 
