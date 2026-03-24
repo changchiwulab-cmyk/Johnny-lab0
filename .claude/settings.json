@@ -1,0 +1,50 @@
+{
+  "language": "zh-TW",
+  "alwaysThinkingEnabled": true,
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(npm:*)",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep"
+    ],
+    "defaultMode": "default"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo $CLAUDE_FILE_PATHS | grep -qE '.json$'; then jq . $CLAUDE_FILE_PATHS > /dev/null 2>&1 && echo 'JSON ok' || echo 'JSON error'; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo $CLAUDE_BASH_COMMAND | grep -qE 'rm |delete |drop '; then echo 'Warning: delete operation detected'; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "AGENTIC_MODE": "multi-agent-coordination",
+    "SECURITY_LEVEL": "priority-first",
+    "AUTO_REVIEW": "enabled"
+  },
+  "attribution": {
+    "commit": "Agentic Coding Workflow 2026\nhttps://claude.ai/code/session_014owiZxBhCRKbyzpp85gkXH"
+  }
+}

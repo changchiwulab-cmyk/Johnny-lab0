@@ -1,0 +1,60 @@
+{
+  "_description": "法務部門工作流自動化鉤子配置（符合 Claude Code hooks schema）",
+  "_version": "1.0.0",
+  "_department": "legal",
+  "_usage": "將此檔案中的 hooks 區段合併到 .claude/settings.json 的 hooks 中以啟用",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | grep -q 'departments/legal/contracts' && bash tools/pdf-extractor.sh $(jq -r '.tool_input.file_path // .tool_response.filePath') 2>/dev/null || true",
+            "statusMessage": "📄 檢查是否需要提取合同文本...",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | grep -qE '\\.json$' && jq . $(jq -r '.tool_input.file_path // .tool_response.filePath') > /dev/null 2>&1 || true",
+            "statusMessage": "🔍 驗證 JSON 格式...",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command' | grep -qE '(rm|delete|drop).*departments/legal' && echo '{\"continue\": true, \"systemMessage\": \"⚠️ 警告：即將刪除法務檔案，請確認\"}' || echo '{\"continue\": true}'",
+            "statusMessage": "🛡️ 法務檔案安全檢查...",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "_workflow_reference": {
+    "_description": "合同審查工作流程參考（非 hooks schema，僅供文檔）",
+    "steps": [
+      "1. 合同上傳 → tools/pdf-extractor.sh 提取文本",
+      "2. 多代理審查 → node agents/legal-orchestrator.js",
+      "3. 生成報告 → review_report_YYYY-MM-DD.md",
+      "4. 歸檔結果 → departments/legal/archive/"
+    ],
+    "safety_rules": [
+      "禁止 rm -rf departments/legal/*",
+      "禁止 git reset --hard",
+      "禁止 git push --force",
+      "刪除合同檔案需人類確認"
+    ]
+  }
+}
