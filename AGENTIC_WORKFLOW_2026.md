@@ -91,10 +91,10 @@
 - 關鍵是識別「容易驗證」的任務
 
 ### 實施檢查清單
-- [ ] 配置自動化審查鉤子
-- [ ] 定義「人類檢查點」標準
-- [ ] 建立異常上報機制
-- [ ] 記錄代理信任度指標
+- [x] 配置自動化審查鉤子 → `agents/automated-review-hooks.js`
+- [x] 定義「人類檢查點」標準 → `tools/human-checkpoint-config.json`
+- [x] 建立異常上報機制 → `agents/escalation-manager.js`
+- [x] 記錄代理信任度指標 → `agents/agent-trust-metrics.js`
 
 ---
 

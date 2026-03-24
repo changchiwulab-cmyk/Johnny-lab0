@@ -1,0 +1,64 @@
+{
+  "version": "1.0.0",
+  "description": "人類檢查點標準配置 - Trend 4 自動化審查系統",
+
+  "checkpoints": {
+    "mandatory": [
+      {
+        "id": "critical_compliance",
+        "trigger": "criticalComplianceCount >= 1",
+        "description": "存在關鍵合規問題",
+        "assignTo": "resolve_by_risk",
+        "action": "block_until_review"
+      },
+      {
+        "id": "high_risk_threshold",
+        "trigger": "highSeverityCount >= 2",
+        "description": "高風險項過多",
+        "assignTo": "resolve_by_risk",
+        "action": "block_until_review"
+      },
+      {
+        "id": "final_approval",
+        "trigger": "always",
+        "description": "最終簽署前審批",
+        "assignTo": "phase_3_final_review",
+        "action": "require_signature"
+      }
+    ],
+    "conditional": [
+      {
+        "id": "unusual_terms",
+        "trigger": "anomalyScore > 0.7",
+        "description": "條款異常偏離標準",
+        "assignTo": "resolve_by_contract_type",
+        "action": "flag_for_review"
+      },
+      {
+        "id": "low_confidence",
+        "trigger": "agentConfidence < 0.6",
+        "description": "代理信心不足",
+        "assignTo": "resolve_by_risk",
+        "action": "flag_for_review"
+      }
+    ]
+  },
+
+  "actions": {
+    "block_until_review": {
+      "blocking": true,
+      "timeout_hours": 48,
+      "description": "阻塞直到人類審查完成"
+    },
+    "require_signature": {
+      "blocking": true,
+      "timeout_hours": 72,
+      "description": "需要授權簽名"
+    },
+    "flag_for_review": {
+      "blocking": false,
+      "timeout_hours": 24,
+      "description": "標記供審查，不阻塞流程"
+    }
+  }
+}

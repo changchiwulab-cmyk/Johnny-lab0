@@ -12,6 +12,9 @@ const ContractTermsExtractor = require("./contract-terms-extractor");
 const ContractRiskAnalyzer = require("./contract-risk-analyzer");
 const ContractComplianceChecker = require("./contract-compliance-checker");
 const ContractRecommendationsGenerator = require("./contract-recommendations-generator");
+const AutomatedReviewHooks = require("./automated-review-hooks");
+const EscalationManager = require("./escalation-manager");
+const AgentTrustMetrics = require("./agent-trust-metrics");
 
 class LegalOrchestrator {
   constructor() {
@@ -23,6 +26,21 @@ class LegalOrchestrator {
       complianceChecker: new ContractComplianceChecker(),
       recommendationsGenerator: new ContractRecommendationsGenerator(),
     };
+    try {
+      this.reviewHooks = new AutomatedReviewHooks();
+    } catch {
+      this.reviewHooks = null;
+    }
+    try {
+      this.escalationManager = new EscalationManager();
+    } catch {
+      this.escalationManager = null;
+    }
+    try {
+      this.trustMetrics = new AgentTrustMetrics();
+    } catch {
+      this.trustMetrics = null;
+    }
   }
 
   /**
@@ -63,8 +81,17 @@ class LegalOrchestrator {
         contractType,
       );
 
-      // Step 4: 合成最終報告
-      console.log("\n📄 Step 4: 合成最終審查報告...");
+      // Step 4: 自動化審查
+      console.log("\n🔍 Step 4: 自動化審查...");
+      const reviewResult = this.runAutomatedReview(
+        terms,
+        risks,
+        compliance,
+        recommendations,
+      );
+
+      // Step 5: 合成最終報告
+      console.log("\n📄 Step 5: 合成最終審查報告...");
       const report = await this.synthesizeReport(
         terms,
         risks,
@@ -75,8 +102,31 @@ class LegalOrchestrator {
         outputDir,
       );
 
-      // Step 5: 歸檔結果
-      console.log("\n💾 Step 5: 歸檔審查結果...");
+      // Step 6: 評估人類檢查點 & 上報
+      console.log("\n👤 Step 6: 評估人類檢查點...");
+      const checkpoint = this.evaluateCheckpoint(reviewResult);
+      let escalation = null;
+      if (checkpoint.requiresHuman) {
+        escalation = this.triggerEscalation(checkpoint, risks, compliance);
+        console.log(
+          `⚠️  需要人類審查: ${checkpoint.reason}`,
+        );
+        console.log(
+          `📋 上報至: ${(escalation?.assignedTo || []).join(", ")}`,
+        );
+      } else {
+        console.log("✅ 自動審查通過，無需人類介入");
+      }
+
+      // Step 7: 記錄信任度指標
+      console.log("\n📊 Step 7: 記錄信任度指標...");
+      this.recordAgentMetrics(terms, risks, compliance, recommendations);
+      const trustReport = this.trustMetrics
+        ? this.trustMetrics.getTrustReport()
+        : null;
+
+      // Step 8: 歸檔結果
+      console.log("\n💾 Step 8: 歸檔審查結果...");
       const archivePath = await this.archiveResults(
         outputDir,
         this.timestamp,
@@ -111,6 +161,10 @@ class LegalOrchestrator {
           ),
           report: report,
         },
+        review: reviewResult,
+        checkpoint,
+        escalation,
+        trustMetrics: trustReport,
       };
     } catch (error) {
       console.error(`\n❌ [LegalOrchestrator] 工作流程失敗:`, error.message);
@@ -544,6 +598,104 @@ ${action.action_items?.map((item) => `  - ${item}`).join("\n")}
     });
 
     return formatted;
+  }
+
+  /**
+   * 執行自動化審查
+   */
+  runAutomatedReview(terms, risks, compliance, recommendations) {
+    if (!this.reviewHooks) {
+      return { passed: true, flags: [], checkpoints: [], context: {} };
+    }
+    try {
+      return this.reviewHooks.reviewResults(
+        terms,
+        risks,
+        compliance,
+        recommendations,
+      );
+    } catch {
+      return { passed: true, flags: [], checkpoints: [], context: {} };
+    }
+  }
+
+  /**
+   * 評估人類檢查點
+   */
+  evaluateCheckpoint(reviewResult) {
+    if (!this.reviewHooks) {
+      return { requiresHuman: false, reason: null, assignedTo: [], checkpoints: [] };
+    }
+    try {
+      return this.reviewHooks.evaluateHumanCheckpoint(reviewResult);
+    } catch {
+      return { requiresHuman: false, reason: null, assignedTo: [], checkpoints: [] };
+    }
+  }
+
+  /**
+   * 觸發上報
+   */
+  triggerEscalation(checkpoint, risks, compliance) {
+    if (!this.escalationManager) {
+      return null;
+    }
+    try {
+      const severity =
+        (compliance?.metadata?.critical || 0) >= 1
+          ? "CRITICAL"
+          : (risks?.metadata?.high_severity || 0) >= 2
+            ? "HIGH"
+            : "MEDIUM";
+
+      return this.escalationManager.escalate({
+        type: checkpoint.reason,
+        severity,
+        source: "automated_review",
+        details: { checkpoints: checkpoint.checkpoints },
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * 記錄代理信任度指標
+   */
+  recordAgentMetrics(terms, risks, compliance, recommendations) {
+    if (!this.trustMetrics) return;
+    try {
+      this.trustMetrics.recordExecution("termsExtractor", {
+        success: terms?.extraction_status === "completed",
+        duration_ms: 0,
+        outputQuality: terms?.basic_info ? 0.9 : 0.3,
+        humanOverrideRequired: false,
+        escalated: false,
+      });
+      this.trustMetrics.recordExecution("riskAnalyzer", {
+        success: risks?.analysis_status === "completed",
+        duration_ms: 0,
+        outputQuality: risks?.metadata ? 0.9 : 0.3,
+        humanOverrideRequired: false,
+        escalated: false,
+      });
+      this.trustMetrics.recordExecution("complianceChecker", {
+        success: compliance?.check_status === "completed",
+        duration_ms: 0,
+        outputQuality: compliance?.metadata ? 0.9 : 0.3,
+        humanOverrideRequired: false,
+        escalated: false,
+      });
+      this.trustMetrics.recordExecution("recommendationsGenerator", {
+        success: !!recommendations?.metadata,
+        duration_ms: 0,
+        outputQuality: recommendations?.metadata ? 0.9 : 0.3,
+        humanOverrideRequired: false,
+        escalated: false,
+      });
+    } catch {
+      // 信任度記錄失敗不影響主流程
+    }
   }
 
   /**

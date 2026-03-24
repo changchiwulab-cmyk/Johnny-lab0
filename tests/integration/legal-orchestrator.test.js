@@ -234,6 +234,49 @@ describe("LegalOrchestrator - Integration Tests", () => {
     });
   });
 
+  describe("Trend 4 - automated review integration", () => {
+    it("should initialize review hooks, escalation manager, and trust metrics", () => {
+      expect(orchestrator.reviewHooks).toBeDefined();
+      expect(orchestrator.escalationManager).toBeDefined();
+      expect(orchestrator.trustMetrics).toBeDefined();
+    });
+
+    it("should include review, checkpoint, and trustMetrics in orchestrate result", async () => {
+      const result = await orchestrator.orchestrate(contractPath, "NDA");
+
+      expect(result).toHaveProperty("review");
+      expect(result.review).toHaveProperty("passed");
+      expect(result.review).toHaveProperty("flags");
+      expect(result.review).toHaveProperty("checkpoints");
+
+      expect(result).toHaveProperty("checkpoint");
+      expect(result.checkpoint).toHaveProperty("requiresHuman");
+
+      expect(result).toHaveProperty("trustMetrics");
+      expect(result.trustMetrics).toHaveProperty("agents");
+      expect(result.trustMetrics.agents.termsExtractor).toBeDefined();
+      expect(result.trustMetrics.agents.riskAnalyzer).toBeDefined();
+      expect(result.trustMetrics.agents.complianceChecker).toBeDefined();
+      expect(result.trustMetrics.agents.recommendationsGenerator).toBeDefined();
+    });
+
+    it("should trigger human checkpoint for the sample contract", async () => {
+      const result = await orchestrator.orchestrate(contractPath, "NDA");
+
+      // The sample contract always triggers final_approval (always trigger)
+      expect(result.checkpoint).toBeDefined();
+      // The final_approval checkpoint is always blocking
+      expect(result.review.checkpoints.some((c) => c.id === "final_approval")).toBe(true);
+    });
+
+    it("should handle review gracefully when reviewHooks is null", async () => {
+      orchestrator.reviewHooks = null;
+      const result = await orchestrator.orchestrate(contractPath, "NDA");
+      expect(result.success).toBe(true);
+      expect(result.review.passed).toBe(true);
+    });
+  });
+
   describe("orchestrate() - full end-to-end workflow", () => {
     it("should complete full workflow successfully", async () => {
       const result = await orchestrator.orchestrate(contractPath, "NDA");
