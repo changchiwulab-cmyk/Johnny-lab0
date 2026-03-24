@@ -5,11 +5,26 @@
 
 const fs = require("fs");
 const path = require("path");
+const OwnerAssignmentDAG = require("./owner-assignment-dag");
 
 class ContractRecommendationsGenerator {
   constructor() {
     this.name = "ContractRecommendationsGenerator";
     this.version = "1.0.0";
+    this.ownerContext = null;
+    try {
+      this.dag = new OwnerAssignmentDAG();
+    } catch {
+      this.dag = null;
+    }
+  }
+
+  /**
+   * 設定 Owner 分配 context
+   * @param {Object} context - { contractType, highSeverityCount, criticalComplianceCount, totalRisks }
+   */
+  setOwnerContext(context) {
+    this.ownerContext = context;
   }
 
   /**
@@ -25,6 +40,13 @@ class ContractRecommendationsGenerator {
     const startTime = Date.now();
 
     try {
+      // 解析動態 Owner 分配
+      const ownerAssignments = this.resolveOwnerAssignments(
+        risks,
+        compliance,
+        terms,
+      );
+
       const recommendations = {
         metadata: {
           generation_timestamp: new Date().toISOString(),
@@ -42,8 +64,16 @@ class ContractRecommendationsGenerator {
         ),
         compliance_improvements:
           this.generateComplianceImprovements(compliance),
-        implementation_plan: this.generateImplementationPlan(risks, compliance),
-        next_steps: this.generateNextSteps(risks, compliance),
+        implementation_plan: this.generateImplementationPlan(
+          risks,
+          compliance,
+          ownerAssignments,
+        ),
+        next_steps: this.generateNextSteps(
+          risks,
+          compliance,
+          ownerAssignments,
+        ),
       };
 
       recommendations.metadata.total_recommendations =
@@ -261,9 +291,31 @@ class ContractRecommendationsGenerator {
   }
 
   /**
+   * 解析動態 Owner 分配
+   */
+  resolveOwnerAssignments(risks, compliance, terms) {
+    if (!this.dag) {
+      return null;
+    }
+
+    const context = this.ownerContext || {
+      contractType: terms?.metadata?.contract_type || "Default",
+      highSeverityCount: risks?.metadata?.high_severity || 0,
+      criticalComplianceCount: compliance?.metadata?.critical || 0,
+      totalRisks: risks?.metadata?.total_risks || 0,
+    };
+
+    try {
+      return this.dag.resolveOwners(context);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * 生成實施計劃
    */
-  generateImplementationPlan(risks, compliance) {
+  generateImplementationPlan(risks, compliance, ownerAssignments) {
     return {
       phase_1: {
         name: "立即行動 (This Week)",
@@ -273,7 +325,8 @@ class ContractRecommendationsGenerator {
           "制定與對方的協商策略",
           "準備談判文件和反建議",
         ],
-        owners: ["Legal Team Lead"],
+        owners:
+          ownerAssignments?.phase_1_immediate || ["Legal Team Lead"],
         deliverables: ["Negotiation Strategy Document"],
       },
       phase_2: {
@@ -284,7 +337,11 @@ class ContractRecommendationsGenerator {
           "根據反饋進行調整",
           "記錄協商進度",
         ],
-        owners: ["Contract Manager", "Legal Counsel"],
+        owners:
+          ownerAssignments?.phase_2_negotiation || [
+            "Contract Manager",
+            "Legal Counsel",
+          ],
         deliverables: ["Revised Contract Draft"],
       },
       phase_3: {
@@ -295,7 +352,11 @@ class ContractRecommendationsGenerator {
           "獲得最終批准",
           "準備簽署",
         ],
-        owners: ["Legal Team", "Executive"],
+        owners:
+          ownerAssignments?.phase_3_final_review || [
+            "Legal Team",
+            "Executive",
+          ],
         deliverables: ["Final Approved Contract"],
       },
     };
@@ -304,36 +365,42 @@ class ContractRecommendationsGenerator {
   /**
    * 生成後續步驟
    */
-  generateNextSteps(risks, compliance) {
+  generateNextSteps(risks, compliance, ownerAssignments) {
     return [
       {
         step: 1,
         action: "審查此報告中的所有建議",
-        owner: "Legal Team Lead",
+        owner:
+          ownerAssignments?.step_1_review_report?.[0] || "Legal Team Lead",
         deadline: "Tomorrow",
       },
       {
         step: 2,
         action: "與業務單位確認關鍵談判要點",
-        owner: "Contract Manager",
+        owner:
+          ownerAssignments?.step_2_confirm_points?.[0] || "Contract Manager",
         deadline: "Within 2 days",
       },
       {
         step: 3,
         action: "準備修改建議和反建議",
-        owner: "Legal Counsel",
+        owner:
+          ownerAssignments?.step_3_prepare_counter?.[0] || "Legal Counsel",
         deadline: "Within 3 days",
       },
       {
         step: 4,
         action: "啟動與對方的協商",
-        owner: "Contract Manager",
+        owner:
+          ownerAssignments?.step_4_initiate_negotiation?.[0] ||
+          "Contract Manager",
         deadline: "Within 5 days",
       },
       {
         step: 5,
         action: "持續跟蹤談判進度，每 2 天更新狀態",
-        owner: "Legal Team Lead",
+        owner:
+          ownerAssignments?.step_5_track_progress?.[0] || "Legal Team Lead",
         deadline: "Ongoing",
       },
     ];

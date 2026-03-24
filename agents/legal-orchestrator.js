@@ -60,6 +60,7 @@ class LegalOrchestrator {
         compliance,
         terms,
         outputDir,
+        contractType,
       );
 
       // Step 4: 合成最終報告
@@ -237,11 +238,25 @@ class LegalOrchestrator {
   /**
    * 生成建議
    */
-  async generateRecommendations(risks, compliance, terms, outputDir) {
+  async generateRecommendations(
+    risks,
+    compliance,
+    terms,
+    outputDir,
+    contractType,
+  ) {
     console.log(`📋 生成修改建議...`);
     const startTime = Date.now();
 
     try {
+      // 設定 Owner 分配 context
+      this.agents.recommendationsGenerator.setOwnerContext({
+        contractType: contractType || "Default",
+        highSeverityCount: risks?.metadata?.high_severity || 0,
+        criticalComplianceCount: compliance?.metadata?.critical || 0,
+        totalRisks: risks?.metadata?.total_risks || 0,
+      });
+
       const result = await this.agents.recommendationsGenerator.generate(
         risks,
         compliance,
