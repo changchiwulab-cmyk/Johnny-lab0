@@ -182,20 +182,24 @@ class SIEMEventCollector {
     }
 
     if (rawEvent.type) {
+      const typeLower = String(rawEvent.type).toLowerCase();
+
+      if (validCategories.includes(typeLower)) {
+        return typeLower;
+      }
+
       const typeMap = {
         vuln: "vulnerability",
-        vulnerability: "vulnerability",
         auth_failure: "access_violation",
         access: "access_violation",
         unauthorized: "access_violation",
-        anomaly: "anomaly",
         suspicious: "anomaly",
         secret: "secret_leak",
         leak: "secret_leak",
         policy: "policy_breach",
         compliance: "policy_breach",
       };
-      const mapped = typeMap[String(rawEvent.type).toLowerCase()];
+      const mapped = typeMap[typeLower];
       if (mapped) return mapped;
     }
 

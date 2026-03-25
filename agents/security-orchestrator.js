@@ -306,7 +306,7 @@ if (require.main === module) {
     const events = JSON.parse(fs.readFileSync(fixturesPath, "utf-8"));
     const orchestrator = new SecurityOrchestrator();
     orchestrator
-      .orchestrate(events, { writeReport: false })
+      .orchestrate(events, { writeReport: process.argv.includes("--report") })
       .then((result) => {
         console.log("\n📊 指標儀表板:");
         console.log(JSON.stringify(result.metrics, null, 2));
