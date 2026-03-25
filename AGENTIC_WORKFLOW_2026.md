@@ -225,10 +225,13 @@
 
 ### 安全檢查清單
 - [ ] 啟用代碼簽名驗證
-- [ ] 配置密鑰掃描鉤子
+- [x] 配置密鑰掃描鉤子（`.claude/security-scan.sh`）
 - [ ] 實施 RBAC（基於角色的訪問控制）
 - [ ] 建立審計日誌系統
 - [ ] 定期滲透測試
+- [x] 配置 npm audit CI 自動化（`.github/workflows/npm-audit.yml`）
+- [x] 配置 CodeQL 靜態分析（`.github/workflows/codeql.yml`）
+- [x] 配置 Snyk 依賴掃描（`.github/workflows/snyk.yml`）
 
 ---
 

@@ -6,7 +6,8 @@
     "test": "jest --verbose",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "audit": "npm audit"
+    "audit": "npm audit",
+    "audit:ci": "npm audit --audit-level=high"
   },
   "keywords": [
     "testing",
