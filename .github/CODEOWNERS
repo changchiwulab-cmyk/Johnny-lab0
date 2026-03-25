@@ -1,0 +1,16 @@
+# Security-critical paths require review from designated owners
+# See docs/HUMAN_CHECKPOINT_STANDARDS.md for Layer 3 trigger conditions
+
+# CI/CD and project configuration
+.github/                @changchiwulab-cmyk
+.claude/                @changchiwulab-cmyk
+package.json            @changchiwulab-cmyk
+tsconfig.json           @changchiwulab-cmyk
+eslint.config.mjs       @changchiwulab-cmyk
+
+# Review system core
+scripts/                @changchiwulab-cmyk
+src/                    @changchiwulab-cmyk
+
+# Documentation
+docs/                   @changchiwulab-cmyk

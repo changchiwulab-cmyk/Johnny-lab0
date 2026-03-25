@@ -1,0 +1,31 @@
+{
+  "name": "johnny-lab0",
+  "version": "1.0.0",
+  "description": "2026 Agentic Coding Framework - Automated Review System Reference Implementation",
+  "type": "module",
+  "scripts": {
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix src/",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "security:audit": "npm audit --audit-level=moderate",
+    "security:secrets": "npx secretlint \"src/**/*\"",
+    "review:layer1": "npm run format && npm run lint && npm run typecheck && npm run test:coverage",
+    "review:layer2": "npm run security:audit && npm run security:secrets && node scripts/anomaly-check.mjs",
+    "review:all": "npm run review:layer1 && npm run review:layer2"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.0",
+    "eslint": "^9.0.0",
+    "@eslint/js": "^9.0.0",
+    "typescript-eslint": "^8.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0",
+    "@vitest/coverage-v8": "^2.0.0",
+    "@secretlint/secretlint-rule-preset-recommend": "^8.0.0",
+    "secretlint": "^8.0.0"
+  }
+}
