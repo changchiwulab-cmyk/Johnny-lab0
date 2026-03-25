@@ -1,0 +1,158 @@
+[
+  {
+    "event_id": "EVT-0001",
+    "timestamp": "2026-03-25T08:00:00Z",
+    "source": "npm-audit",
+    "severity": "HIGH",
+    "category": "vulnerability",
+    "payload": {
+      "package": "lodash",
+      "version": "4.17.20",
+      "cve": "CVE-2021-23337",
+      "description": "Prototype pollution vulnerability"
+    }
+  },
+  {
+    "event_id": "EVT-0002",
+    "timestamp": "2026-03-25T08:05:00Z",
+    "source": "npm-audit",
+    "severity": "HIGH",
+    "category": "vulnerability",
+    "payload": {
+      "package": "axios",
+      "version": "0.21.0",
+      "cve": "CVE-2021-3749",
+      "description": "Regular expression denial of service"
+    }
+  },
+  {
+    "event_id": "EVT-0003",
+    "timestamp": "2026-03-25T08:10:00Z",
+    "source": "npm-audit",
+    "severity": "CRITICAL",
+    "category": "vulnerability",
+    "payload": {
+      "package": "jsonwebtoken",
+      "version": "8.5.0",
+      "cve": "CVE-2022-23529",
+      "description": "Remote code execution via malicious JWT"
+    }
+  },
+  {
+    "event_id": "EVT-0004",
+    "timestamp": "2026-03-25T08:15:00Z",
+    "source": "trufflehog",
+    "severity": "CRITICAL",
+    "category": "secret_leak",
+    "payload": {
+      "file": "config/production.js",
+      "line": 42,
+      "type": "aws_access_key",
+      "description": "AWS Access Key detected in source code"
+    }
+  },
+  {
+    "event_id": "EVT-0005",
+    "timestamp": "2026-03-25T08:20:00Z",
+    "source": "runtime",
+    "severity": "HIGH",
+    "type": "auth_failure",
+    "category": "access_violation",
+    "payload": {
+      "user": "unknown",
+      "ip": "192.168.1.100",
+      "attempts": 3,
+      "endpoint": "/api/admin"
+    }
+  },
+  {
+    "event_id": "EVT-0006",
+    "timestamp": "2026-03-25T08:22:00Z",
+    "source": "runtime",
+    "severity": "HIGH",
+    "type": "auth_failure",
+    "category": "access_violation",
+    "payload": {
+      "user": "unknown",
+      "ip": "192.168.1.100",
+      "attempts": 2,
+      "endpoint": "/api/admin"
+    }
+  },
+  {
+    "event_id": "EVT-0007",
+    "timestamp": "2026-03-25T08:25:00Z",
+    "source": "runtime",
+    "severity": "HIGH",
+    "type": "auth_failure",
+    "category": "access_violation",
+    "payload": {
+      "user": "unknown",
+      "ip": "192.168.1.100",
+      "attempts": 5,
+      "endpoint": "/api/admin"
+    }
+  },
+  {
+    "event_id": "EVT-0008",
+    "timestamp": "2026-03-25T08:30:00Z",
+    "source": "codeql",
+    "severity": "MEDIUM",
+    "category": "vulnerability",
+    "payload": {
+      "rule": "js/sql-injection",
+      "file": "src/db/queries.js",
+      "line": 88,
+      "description": "Potential SQL injection via unsanitized user input"
+    }
+  },
+  {
+    "event_id": "EVT-0009",
+    "timestamp": "2026-03-25T09:00:00Z",
+    "source": "runtime",
+    "severity": "LOW",
+    "category": "anomaly",
+    "payload": {
+      "type": "heartbeat",
+      "service": "api-gateway",
+      "status": "healthy"
+    }
+  },
+  {
+    "event_id": "EVT-0010",
+    "timestamp": "2026-03-25T09:05:00Z",
+    "source": "hook",
+    "severity": "MEDIUM",
+    "category": "policy_breach",
+    "payload": {
+      "rule": "no-direct-production-write",
+      "file": "config/production.env",
+      "action": "Write",
+      "user": "developer-a"
+    }
+  },
+  {
+    "event_id": "EVT-0011",
+    "timestamp": "2026-03-25T09:10:00Z",
+    "source": "snyk",
+    "severity": "HIGH",
+    "category": "vulnerability",
+    "payload": {
+      "package": "express",
+      "version": "4.17.1",
+      "severity": "high",
+      "description": "Open redirect vulnerability"
+    }
+  },
+  {
+    "event_id": "EVT-0012",
+    "timestamp": "2026-03-25T09:12:00Z",
+    "source": "runtime",
+    "severity": "INFO",
+    "category": "anomaly",
+    "payload": {
+      "type": "debug_log",
+      "message": "System check complete"
+    }
+  }
+]

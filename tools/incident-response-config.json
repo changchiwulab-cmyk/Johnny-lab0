@@ -1,0 +1,151 @@
+{
+  "version": "1.0.0",
+  "description": "事件響應 Playbook 與級聯配置",
+  "playbooks": {
+    "secret_leak": {
+      "severity_min": "CRITICAL",
+      "category": "secret_leak",
+      "actions": [
+        "rotate_credentials",
+        "isolate_source",
+        "notify",
+        "audit_trail",
+        "verify"
+      ],
+      "auto_resolve": false,
+      "human_required": true,
+      "description": "密鑰洩露響應：輪換憑證、隔離來源、通知 Level 3"
+    },
+    "vulnerability_critical": {
+      "severity_min": "CRITICAL",
+      "category": "vulnerability",
+      "actions": [
+        "block_deployment",
+        "notify",
+        "auto_patch_attempt",
+        "verify"
+      ],
+      "auto_resolve": false,
+      "human_required": true,
+      "description": "嚴重漏洞響應：阻止部署、通知、嘗試自動修補"
+    },
+    "vulnerability_high": {
+      "severity_min": "HIGH",
+      "category": "vulnerability",
+      "actions": [
+        "create_ticket",
+        "notify",
+        "auto_patch_attempt",
+        "verify"
+      ],
+      "auto_resolve": true,
+      "human_required": false,
+      "description": "高危漏洞響應：建立工單、通知、嘗試自動修補"
+    },
+    "access_violation": {
+      "severity_min": "HIGH",
+      "category": "access_violation",
+      "actions": [
+        "block_source",
+        "notify",
+        "audit_trail"
+      ],
+      "auto_resolve": false,
+      "human_required": true,
+      "description": "訪問違規響應：阻止來源、通知、審計追蹤"
+    },
+    "anomaly_detected": {
+      "severity_min": "MEDIUM",
+      "category": "anomaly",
+      "actions": [
+        "increase_monitoring",
+        "notify",
+        "log_enhanced"
+      ],
+      "auto_resolve": true,
+      "human_required": false,
+      "description": "異常偵測響應：加強監控、通知、增強日誌"
+    },
+    "policy_breach": {
+      "severity_min": "MEDIUM",
+      "category": "policy_breach",
+      "actions": [
+        "notify",
+        "create_ticket",
+        "log_enhanced"
+      ],
+      "auto_resolve": true,
+      "human_required": false,
+      "description": "政策違規響應：通知、建立工單、增強日誌"
+    }
+  },
+  "escalation_chains": {
+    "level_0": [],
+    "level_1": ["Security Team"],
+    "level_2": ["Security Team", "Security Team Lead", "DevOps On-Call"],
+    "level_3": ["Security Team", "Security Team Lead", "CTO", "Executive Team"]
+  },
+  "action_definitions": {
+    "rotate_credentials": {
+      "description": "輪換受影響的密鑰/憑證",
+      "automated": true,
+      "timeout_seconds": 300
+    },
+    "isolate_source": {
+      "description": "隔離受影響的系統/服務",
+      "automated": true,
+      "timeout_seconds": 60
+    },
+    "block_deployment": {
+      "description": "阻止新的部署直到問題解決",
+      "automated": true,
+      "timeout_seconds": 30
+    },
+    "block_source": {
+      "description": "阻止違規來源的訪問",
+      "automated": true,
+      "timeout_seconds": 30
+    },
+    "notify": {
+      "description": "通知相關人員（根據級聯鏈）",
+      "automated": true,
+      "timeout_seconds": 10
+    },
+    "auto_patch_attempt": {
+      "description": "嘗試自動修補已知漏洞",
+      "automated": true,
+      "timeout_seconds": 600
+    },
+    "create_ticket": {
+      "description": "在問題追蹤系統建立工單",
+      "automated": true,
+      "timeout_seconds": 30
+    },
+    "increase_monitoring": {
+      "description": "提高受影響區域的監控頻率",
+      "automated": true,
+      "timeout_seconds": 30
+    },
+    "log_enhanced": {
+      "description": "啟用增強日誌記錄",
+      "automated": true,
+      "timeout_seconds": 10
+    },
+    "audit_trail": {
+      "description": "記錄完整的審計追蹤",
+      "automated": true,
+      "timeout_seconds": 30
+    },
+    "verify": {
+      "description": "驗證修復措施已生效",
+      "automated": true,
+      "timeout_seconds": 300
+    }
+  },
+  "success_metrics": {
+    "detection_time_target_seconds": 60,
+    "high_severity_response_target_hours": 4,
+    "coverage_target_percent": 95,
+    "zero_day_leak_target": 0
+  }
+}

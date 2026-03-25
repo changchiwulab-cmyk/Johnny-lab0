@@ -1,0 +1,26 @@
+{
+  "name": "test-automation-hooks",
+  "version": "1.0.0",
+  "description": "Test automation hooks for code quality and security",
+  "scripts": {
+    "test": "jest --verbose",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "audit": "npm audit",
+    "security:scan": "node agents/security-orchestrator.js",
+    "security:monitor": "node -e \"const S=require('./agents/security-orchestrator');const o=new S();console.log('SIEM 監控模式啟動...');\"",
+    "security:report": "node agents/security-orchestrator.js --report"
+  },
+  "keywords": [
+    "testing",
+    "automation",
+    "hooks"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "jest": "^30.3.0",
+    "prettier": "^3.0.0"
+  }
+}
