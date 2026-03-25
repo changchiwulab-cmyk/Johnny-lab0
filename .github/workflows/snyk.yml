@@ -1,5 +1,4 @@
 name: "Snyk Security Scan"
-
 on:
   push:
     branches: [master, "claude/*"]
@@ -7,7 +6,6 @@ on:
     branches: [master]
   schedule:
     - cron: "0 6 * * 1"
-
 jobs:
   snyk:
     name: Snyk Dependency Scan
@@ -15,27 +13,22 @@ jobs:
     permissions:
       contents: read
       security-events: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-
       - name: Install dependencies
         run: npm ci
-
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/node@master
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high
-
+          args: --severity-threshold=high --sarif-file-output=snyk.sarif
       - name: Upload Snyk SARIF results
         uses: github/codeql-action/upload-sarif@v4
         if: always()
