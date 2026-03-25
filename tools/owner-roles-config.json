@@ -1,0 +1,184 @@
+{
+  "version": "1.0.0",
+  "description": "Owner 角色 registry 與 DAG 分配規則",
+
+  "roles": {
+    "Legal Team Lead": {
+      "department": "legal",
+      "level": "senior",
+      "capabilities": ["review", "approve", "escalate"]
+    },
+    "Senior Legal Counsel": {
+      "department": "legal",
+      "level": "senior",
+      "capabilities": ["review", "negotiate", "draft"]
+    },
+    "Legal Counsel": {
+      "department": "legal",
+      "level": "mid",
+      "capabilities": ["review", "draft", "negotiate"]
+    },
+    "Contract Manager": {
+      "department": "legal",
+      "level": "mid",
+      "capabilities": ["manage", "track", "coordinate"]
+    },
+    "Executive": {
+      "department": "executive",
+      "level": "executive",
+      "capabilities": ["approve", "sign"]
+    },
+    "Compliance Officer": {
+      "department": "legal",
+      "level": "senior",
+      "capabilities": ["audit", "review", "certify"]
+    },
+    "IP Specialist": {
+      "department": "legal",
+      "level": "specialist",
+      "capabilities": ["review", "draft"]
+    },
+    "Labor Law Specialist": {
+      "department": "legal",
+      "level": "specialist",
+      "capabilities": ["review", "draft", "negotiate"]
+    }
+  },
+
+  "dag_nodes": [
+    {
+      "id": "phase_1_immediate",
+      "type": "implementation",
+      "name": "立即行動",
+      "dependencies": [],
+      "ownerRule": "resolve_by_risk",
+      "defaultOwners": ["Legal Team Lead"]
+    },
+    {
+      "id": "phase_2_negotiation",
+      "type": "implementation",
+      "name": "協商階段",
+      "dependencies": ["phase_1_immediate"],
+      "ownerRule": "resolve_by_contract_type",
+      "defaultOwners": ["Contract Manager", "Legal Counsel"]
+    },
+    {
+      "id": "phase_3_final_review",
+      "type": "approval",
+      "name": "最終審查",
+      "dependencies": ["phase_2_negotiation"],
+      "ownerRule": "resolve_by_risk",
+      "defaultOwners": ["Legal Team", "Executive"]
+    },
+    {
+      "id": "step_1_review_report",
+      "type": "review",
+      "name": "審查報告",
+      "dependencies": [],
+      "ownerRule": "resolve_by_risk",
+      "defaultOwners": ["Legal Team Lead"]
+    },
+    {
+      "id": "step_2_confirm_points",
+      "type": "coordination",
+      "name": "確認談判要點",
+      "dependencies": ["step_1_review_report"],
+      "ownerRule": "resolve_by_step",
+      "defaultOwners": ["Contract Manager"]
+    },
+    {
+      "id": "step_3_prepare_counter",
+      "type": "drafting",
+      "name": "準備反建議",
+      "dependencies": ["step_2_confirm_points"],
+      "ownerRule": "resolve_by_contract_type",
+      "defaultOwners": ["Legal Counsel"]
+    },
+    {
+      "id": "step_4_initiate_negotiation",
+      "type": "execution",
+      "name": "啟動協商",
+      "dependencies": ["step_3_prepare_counter"],
+      "ownerRule": "resolve_by_step",
+      "defaultOwners": ["Contract Manager"]
+    },
+    {
+      "id": "step_5_track_progress",
+      "type": "monitoring",
+      "name": "跟蹤進度",
+      "dependencies": ["step_4_initiate_negotiation"],
+      "ownerRule": "resolve_by_risk",
+      "defaultOwners": ["Legal Team Lead"]
+    }
+  ],
+
+  "dag_edges": [
+    { "from": "phase_1_immediate", "to": "phase_2_negotiation" },
+    { "from": "phase_2_negotiation", "to": "phase_3_final_review" },
+    { "from": "step_1_review_report", "to": "step_2_confirm_points" },
+    { "from": "step_2_confirm_points", "to": "step_3_prepare_counter" },
+    { "from": "step_3_prepare_counter", "to": "step_4_initiate_negotiation" },
+    { "from": "step_4_initiate_negotiation", "to": "step_5_track_progress" }
+  ],
+
+  "risk_based_rules": {
+    "high": {
+      "phase_1_immediate": ["Legal Team Lead", "Senior Legal Counsel"],
+      "phase_2_negotiation": ["Senior Legal Counsel", "Contract Manager"],
+      "phase_3_final_review": ["Legal Team Lead", "Executive"],
+      "step_1_review_report": ["Senior Legal Counsel"],
+      "step_2_confirm_points": ["Contract Manager"],
+      "step_3_prepare_counter": ["Senior Legal Counsel"],
+      "step_4_initiate_negotiation": ["Senior Legal Counsel", "Contract Manager"],
+      "step_5_track_progress": ["Legal Team Lead"]
+    },
+    "medium": {
+      "phase_1_immediate": ["Legal Team Lead"],
+      "phase_2_negotiation": ["Contract Manager", "Legal Counsel"],
+      "phase_3_final_review": ["Legal Team Lead", "Executive"],
+      "step_1_review_report": ["Legal Counsel"],
+      "step_2_confirm_points": ["Contract Manager"],
+      "step_3_prepare_counter": ["Legal Counsel"],
+      "step_4_initiate_negotiation": ["Contract Manager"],
+      "step_5_track_progress": ["Contract Manager"]
+    },
+    "low": {
+      "phase_1_immediate": ["Contract Manager"],
+      "phase_2_negotiation": ["Contract Manager"],
+      "phase_3_final_review": ["Legal Team Lead"],
+      "step_1_review_report": ["Contract Manager"],
+      "step_2_confirm_points": ["Contract Manager"],
+      "step_3_prepare_counter": ["Contract Manager"],
+      "step_4_initiate_negotiation": ["Contract Manager"],
+      "step_5_track_progress": ["Contract Manager"]
+    }
+  },
+
+  "contract_type_rules": {
+    "NDA": {
+      "specialist": "Senior Legal Counsel",
+      "negotiator": "Legal Counsel",
+      "reviewer": "Legal Team Lead"
+    },
+    "SLA": {
+      "specialist": "Senior Legal Counsel",
+      "negotiator": "Contract Manager",
+      "reviewer": "Legal Team Lead"
+    },
+    "Employment": {
+      "specialist": "Labor Law Specialist",
+      "negotiator": "Legal Counsel",
+      "reviewer": "Legal Team Lead"
+    },
+    "License": {
+      "specialist": "IP Specialist",
+      "negotiator": "Legal Counsel",
+      "reviewer": "Legal Team Lead"
+    },
+    "Default": {
+      "specialist": "Legal Counsel",
+      "negotiator": "Contract Manager",
+      "reviewer": "Legal Team Lead"
+    }
+  }
+}
