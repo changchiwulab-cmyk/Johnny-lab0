@@ -1,0 +1,43 @@
+{
+  "department": "security",
+  "role": "security_auditor",
+  "description": "安全團隊審計與掃描配置",
+  "version": "1.0.0",
+  "trend7_pilot": false,
+  "permissions": {
+    "allow": [
+      "Read",
+      "Bash(audit:*)",
+      "Bash(scan:*)",
+      "Bash(snyk:*)",
+      "Bash(npm:audit)",
+      "Glob",
+      "Grep"
+    ],
+    "ask": [
+      "Edit(.json)",
+      "Bash(git:commit)",
+      "Bash(git:push)"
+    ],
+    "deny": [
+      "Write",
+      "Bash(sudo:*)",
+      "Bash(rm:*)",
+      "Bash(git:reset|git:rebase)"
+    ]
+  },
+  "use_cases": [
+    {
+      "name": "漏洞掃描",
+      "description": "自動化依賴與代碼漏洞掃描"
+    },
+    {
+      "name": "合規性檢查",
+      "description": "檢查代碼庫是否符合安全合規要求"
+    },
+    {
+      "name": "密鑰洩露偵測",
+      "description": "掃描代碼中是否有洩露的密鑰或憑證"
+    }
+  ]
+}

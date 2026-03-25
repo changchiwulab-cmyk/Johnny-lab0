@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "description": "RBAC 角色定義配置 — 基於 Trend 7 編碼民主化",
+  "deny_by_default": true,
+  "roles": {
+    "developer": {
+      "description": "完整開發權限",
+      "permissions": {
+        "allow": ["Read", "Write", "Edit", "Bash(*)", "Glob", "Grep"],
+        "ask": [],
+        "deny": ["Bash(sudo:*)", "Write(/.env*)"]
+      }
+    },
+    "operations": {
+      "description": "運營團隊 — 文檔與 npm 存取",
+      "permissions": {
+        "allow": ["Read", "Edit(.md|.json)", "Bash(npm:*)", "Glob", "Grep"],
+        "ask": ["Bash(rm:*)", "Write(/departments/*)"],
+        "deny": ["Write(/.env*)", "Bash(sudo:*)"]
+      }
+    },
+    "legal": {
+      "description": "法務部門 — 文件審查",
+      "permissions": {
+        "allow": ["Read", "Edit(.md|.json|.txt)", "Bash(grep:*)", "Bash(jq:*)", "Bash(pdftotext:*)", "Glob"],
+        "ask": ["Write(/departments/legal/archive/*)", "Bash(git:commit)", "Bash(git:push)", "Edit(settings.json)"],
+        "deny": ["Write(/etc/*)", "Write(/.env*)", "Write(/.claude/settings.json)", "Bash(sudo:*)", "Bash(rm:*.js|*.ts)", "Bash(git:reset|git:rebase)"]
+      }
+    },
+    "security": {
+      "description": "安全團隊 — 審計與掃描",
+      "permissions": {
+        "allow": ["Read", "Bash(audit:*)", "Bash(scan:*)", "Bash(snyk:*)", "Glob", "Grep"],
+        "ask": ["Edit(.json)", "Bash(git:commit)"],
+        "deny": ["Write", "Bash(sudo:*)", "Bash(rm:*)"]
+      }
+    }
+  }
+}

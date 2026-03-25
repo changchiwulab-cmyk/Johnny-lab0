@@ -1,0 +1,42 @@
+{
+  "department": "operations",
+  "role": "operations_staff",
+  "description": "運營部門自動化流程配置",
+  "version": "1.0.0",
+  "trend7_pilot": true,
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit(.md|.json)",
+      "Bash(npm:*)",
+      "Glob",
+      "Grep"
+    ],
+    "ask": [
+      "Bash(rm:*)",
+      "Write(/departments/*)",
+      "Bash(git:commit)",
+      "Bash(git:push)"
+    ],
+    "deny": [
+      "Write(/.env*)",
+      "Write(/.claude/settings.json)",
+      "Bash(sudo:*)",
+      "Bash(git:reset|git:rebase)"
+    ]
+  },
+  "use_cases": [
+    {
+      "name": "員工入職自動化",
+      "description": "自動化新員工入職流程文件準備"
+    },
+    {
+      "name": "數據同步腳本",
+      "description": "部門間數據同步與報告生成"
+    },
+    {
+      "name": "流程文件更新",
+      "description": "標準作業流程文件的自動化更新"
+    }
+  ]
+}
