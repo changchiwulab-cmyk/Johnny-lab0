@@ -1,0 +1,111 @@
+name: Automated Review System
+
+on:
+  push:
+    branches: ['*']
+  pull_request:
+    branches: ['*']
+
+jobs:
+  layer1-quality:
+    name: 'Layer 1: Code Quality'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Check formatting (Prettier)
+        run: npm run format
+
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Type check (TypeScript)
+        run: npm run typecheck
+
+      - name: Tests with coverage
+        run: npm run test:coverage
+
+  layer2-security:
+    name: 'Layer 2: Security & Anomaly Detection'
+    runs-on: ubuntu-latest
+    needs: layer1-quality
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: npm audit
+        run: npm run security:audit
+        continue-on-error: true
+
+      - name: Secret detection
+        run: npm run security:secrets
+        continue-on-error: true
+
+      - name: Anomaly analysis
+        run: node scripts/anomaly-check.mjs
+
+  layer3-human-gate:
+    name: 'Layer 3: Human Review Gate'
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: layer2-security
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for sensitive file changes
+        id: sensitive-check
+        run: |
+          SENSITIVE_PATTERNS="package.json|package-lock.json|tsconfig.json|eslint.config|.github/|.claude/"
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..HEAD 2>/dev/null || echo "")
+
+          SENSITIVE_CHANGES=""
+          for file in $CHANGED_FILES; do
+            if echo "$file" | grep -qE "$SENSITIVE_PATTERNS"; then
+              SENSITIVE_CHANGES="$SENSITIVE_CHANGES $file"
+            fi
+          done
+
+          if [ -n "$SENSITIVE_CHANGES" ]; then
+            echo "needs_review=true" >> "$GITHUB_OUTPUT"
+            echo "changed_files=$SENSITIVE_CHANGES" >> "$GITHUB_OUTPUT"
+            echo "Sensitive files changed:$SENSITIVE_CHANGES"
+          else
+            echo "needs_review=false" >> "$GITHUB_OUTPUT"
+            echo "No sensitive file changes detected"
+          fi
+
+      - name: Add human review label
+        if: steps.sensitive-check.outputs.needs_review == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['needs-human-review']
+            });
+
+            await github.rest.pulls.requestReviewers({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              reviewers: []
+            }).catch(() => {});
+
+            console.log('Human review requested for sensitive changes');
