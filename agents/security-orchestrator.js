@@ -34,7 +34,7 @@ class SecurityOrchestrator {
     console.log("=".repeat(60));
 
     const workflowStartTime = Date.now();
-    const timestamp = new Date().toISOString().split("T")[0];
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 
     try {
       // Step 1: 驗證輸入

@@ -163,16 +163,15 @@ describe("IncidentResponseHandler", () => {
   // ─── checkSLACompliance() ────────────────────────────────────────────────────
 
   describe("checkSLACompliance()", () => {
-    it("should return 'met' when response time is within SLA", () => {
-      const alert = makeAlert({ sla_response_minutes: 240 });
-      const responseTimeMs = 5 * 60 * 1000; // 5 minutes in ms
-      expect(handler.checkSLACompliance(alert, responseTimeMs)).toBe("met");
+    it("should return 'met' when alert age is within SLA", () => {
+      const alert = makeAlert({ sla_response_minutes: 240, timestamp: new Date().toISOString() });
+      expect(handler.checkSLACompliance(alert, 0)).toBe("met");
     });
 
-    it("should return 'breached' when response time exceeds SLA", () => {
-      const alert = makeAlert({ sla_response_minutes: 0.001 }); // essentially 0 minutes
-      const responseTimeMs = 5000; // 5 seconds in ms
-      expect(handler.checkSLACompliance(alert, responseTimeMs)).toBe("breached");
+    it("should return 'breached' when alert age exceeds SLA", () => {
+      const oldTime = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(); // 5 hours ago
+      const alert = makeAlert({ sla_response_minutes: 240, timestamp: oldTime });
+      expect(handler.checkSLACompliance(alert, 0)).toBe("breached");
     });
 
     it("should return 'met' when sla_response_minutes is null", () => {
@@ -180,10 +179,16 @@ describe("IncidentResponseHandler", () => {
       expect(handler.checkSLACompliance(alert, 999999)).toBe("met");
     });
 
-    it("should return 'met' when response time exactly meets SLA boundary", () => {
-      const alert = makeAlert({ sla_response_minutes: 1 });
-      const responseTimeMs = 60 * 1000; // exactly 1 minute
+    it("should fall back to responseTimeMs when no timestamp", () => {
+      const alert = makeAlert({ sla_response_minutes: 1, timestamp: undefined });
+      const responseTimeMs = 30 * 1000; // 30 seconds
       expect(handler.checkSLACompliance(alert, responseTimeMs)).toBe("met");
+    });
+
+    it("should use alert timestamp over handler processing time", () => {
+      const recentTime = new Date(Date.now() - 30 * 1000).toISOString(); // 30 seconds ago
+      const alert = makeAlert({ sla_response_minutes: 240, timestamp: recentTime });
+      expect(handler.checkSLACompliance(alert, 999999999)).toBe("met");
     });
   });
 

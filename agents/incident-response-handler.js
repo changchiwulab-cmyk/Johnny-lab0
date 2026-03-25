@@ -32,6 +32,7 @@ class IncidentResponseHandler {
     }
 
     const startTime = Date.now();
+    this.actionLog = [];
     const responses = [];
     let slaMetCount = 0;
     let slaBreachedCount = 0;
@@ -75,7 +76,7 @@ class IncidentResponseHandler {
         timestamp: new Date().toISOString(),
       },
       responses,
-      action_log: this.actionLog,
+      action_log: [...this.actionLog],
     };
   }
 
@@ -230,17 +231,25 @@ class IncidentResponseHandler {
   }
 
   /**
-   * 檢查 SLA 合規性
+   * 檢查 SLA 合規性（基於告警年齡，非處理時間）
    * @param {object} alert
-   * @param {number} responseTimeMs
+   * @param {number} responseTimeMs - 處理時間（備用）
    * @returns {string} "met" 或 "breached"
    */
   checkSLACompliance(alert, responseTimeMs) {
     const slaMinutes = alert.sla_response_minutes;
     if (!slaMinutes) return "met";
 
-    const responseMinutes = responseTimeMs / 60000;
-    return responseMinutes <= slaMinutes ? "met" : "breached";
+    let elapsedMinutes;
+    if (alert.timestamp) {
+      const alertTime = new Date(alert.timestamp).getTime();
+      const now = Date.now();
+      elapsedMinutes = (now - alertTime) / 60000;
+    } else {
+      elapsedMinutes = responseTimeMs / 60000;
+    }
+
+    return elapsedMinutes <= slaMinutes ? "met" : "breached";
   }
 
   /**
