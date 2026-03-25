@@ -1,0 +1,83 @@
+{
+  "version": "1.0.0",
+  "description": "SIEM 偵測規則與異常判斷標準",
+  "detection_rules": {
+    "repeated_auth_failure": {
+      "pattern": "access_violation",
+      "threshold": 5,
+      "window_minutes": 10,
+      "severity": "HIGH",
+      "description": "短時間內多次認證失敗"
+    },
+    "vulnerability_cluster": {
+      "pattern": "vulnerability",
+      "threshold": 3,
+      "window_minutes": 60,
+      "severity": "HIGH",
+      "description": "短時間內多個漏洞被偵測"
+    },
+    "secret_leak_detected": {
+      "pattern": "secret_leak",
+      "threshold": 1,
+      "window_minutes": null,
+      "severity": "CRITICAL",
+      "description": "偵測到密鑰洩露"
+    },
+    "anomalous_behavior": {
+      "pattern": "anomaly",
+      "threshold": 1,
+      "anomaly_score_min": 75,
+      "severity": "MEDIUM",
+      "description": "異常行為偵測"
+    },
+    "policy_breach": {
+      "pattern": "policy_breach",
+      "threshold": 1,
+      "window_minutes": null,
+      "severity": "MEDIUM",
+      "description": "安全政策違規"
+    },
+    "dependency_vulnerability": {
+      "pattern": "vulnerability",
+      "source_filter": "npm-audit",
+      "threshold": 1,
+      "window_minutes": null,
+      "severity": "HIGH",
+      "description": "依賴套件漏洞"
+    }
+  },
+  "severity_levels": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"],
+  "severity_sla": {
+    "CRITICAL": { "response_minutes": 60, "escalation_level": 3 },
+    "HIGH": { "response_minutes": 240, "escalation_level": 2 },
+    "MEDIUM": { "response_minutes": 1440, "escalation_level": 1 },
+    "LOW": { "response_minutes": 4320, "escalation_level": 1 },
+    "INFO": { "response_minutes": null, "escalation_level": 0 }
+  },
+  "noise_filters": {
+    "whitelist_sources": [],
+    "blacklist_patterns": ["health_check", "heartbeat", "debug_log", "ping"]
+  },
+  "anomaly_baselines": {
+    "events_per_hour": 100,
+    "vulnerability_per_day": 5,
+    "auth_failures_per_hour": 3,
+    "policy_breaches_per_day": 2
+  },
+  "event_categories": [
+    "vulnerability",
+    "access_violation",
+    "anomaly",
+    "policy_breach",
+    "secret_leak"
+  ],
+  "event_sources": [
+    "npm-audit",
+    "codeql",
+    "snyk",
+    "trufflehog",
+    "runtime",
+    "hook",
+    "manual"
+  ]
+}

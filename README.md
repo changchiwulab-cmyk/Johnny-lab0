@@ -36,7 +36,21 @@
 - 建立審查流程時的檢查清單
 - 跨部門權限設計時的範本
 
-### 3. .claude/settings.json
+### 3. SIEM_AUTOMATED_RESPONSE.md
+**用途**：W7-W8 SIEM 與自動響應系統文檔
+
+包含：
+- SIEM 管線架構（收集 → 分析 → 響應）
+- 偵測規則與 Playbook 參考
+- 級聯通知機制
+- 成功指標儀表板（對標 STRATEGIC_ANALYSIS_2026.md 目標）
+
+**適用場景**：
+- 配置安全事件監控管線
+- 設計事件響應 Playbook
+- SLA 合規追蹤
+
+### 4. .claude/settings.json
 **用途**：Claude Code 多代理框架配置
 
 包含：
@@ -107,7 +121,7 @@
 | Trend 2：多代理協調 | 🟢 高 | 🟡 中 | ⭐⭐⭐ NOW | AGENTIC_WORKFLOW_2026.md #1 |
 | Trend 4：人類監督 | 🟢 高 | 🟡 中 | ⭐⭐⭐ NOW | AGENTIC_WORKFLOW_2026.md #2 |
 | Trend 7：編碼民主化 | 🟢 高 | 🟢 低 | ⭐⭐⭐ NOW | AGENTIC_WORKFLOW_2026.md #3 |
-| Trend 8：安全優先 | 🟢 高 | 🟡 中 | ⭐⭐⭐ NOW | AGENTIC_WORKFLOW_2026.md #4 |
+| Trend 8：安全優先 | 🟢 高 | 🟡 中 | ⭐⭐⭐ NOW ✅ | SIEM_AUTOMATED_RESPONSE.md |
 | Trend 1：推理架構 | 🟡 中 | 🔴 高 | ⭐⭐ MID | STRATEGIC_ANALYSIS_2026.md |
 | Trend 5：認知架構 | 🟡 中 | 🟡 中 | ⭐⭐ MID | STRATEGIC_ANALYSIS_2026.md |
 | Trend 3：推理成本 | 🟡 中 | 🟡 中 | ⭐⭐ LATER | STRATEGIC_ANALYSIS_2026.md |

@@ -1,0 +1,101 @@
+{
+  "department": "security",
+  "role": "siem_operator",
+  "description": "安全部門 SIEM 與自動響應系統配置",
+  "version": "1.0.0",
+  "trend8_w7w8": true,
+  "implementation_date": "2026-03-25",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Bash(npm:audit)",
+      "Bash(node:*)",
+      "Bash(grep:*)",
+      "Bash(jq:*)",
+      "Glob"
+    ],
+    "ask": [
+      "Write(/departments/security/archive/*)",
+      "Bash(git:commit)",
+      "Bash(git:push)",
+      "Bash(npm:audit fix)"
+    ],
+    "deny": [
+      "Write(/etc/*)",
+      "Write(/.env*)",
+      "Write(/.claude/settings.json)",
+      "Bash(sudo:*)",
+      "Bash(rm:*.js|*.ts)",
+      "Bash(git:reset|git:rebase)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const f=process.env.CLAUDE_TOOL_RESULT_FILE; if(f && f.match(/\\.js$/)) { console.log('🔒 觸發安全掃描...'); }\" 2>/dev/null || true",
+            "statusMessage": "🔒 執行安全檢查..."
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "SIEM_MODE": "active",
+    "AUTO_RESPONSE": "enabled",
+    "ESCALATION_ENABLED": "true",
+    "COVERAGE_TARGET": "95"
+  },
+  "workflow_stages": [
+    {
+      "stage": "event_ingestion",
+      "agent": "SIEMEventCollector",
+      "description": "收集並正規化原始安全事件",
+      "requires_approval": false,
+      "automated": true
+    },
+    {
+      "stage": "event_analysis",
+      "agent": "SIEMEventAnalyzer",
+      "description": "模式偵測、異常評分、關聯分析",
+      "requires_approval": false,
+      "automated": true
+    },
+    {
+      "stage": "incident_response",
+      "agent": "IncidentResponseHandler",
+      "description": "自動響應：隔離、通知、修補",
+      "requires_approval": false,
+      "automated": true
+    },
+    {
+      "stage": "report_generation",
+      "agent": "SecurityOrchestrator",
+      "description": "合成完整安全報告",
+      "requires_approval": false,
+      "automated": true
+    },
+    {
+      "stage": "human_review",
+      "agent": "human",
+      "description": "安全團隊審查 CRITICAL/HIGH 告警",
+      "requires_approval": true,
+      "automated": false
+    }
+  ],
+  "success_metrics": {
+    "detection_time_target_seconds": 60,
+    "high_severity_response_target_hours": 4,
+    "coverage_target_percent": 95,
+    "zero_day_leak_target": 0,
+    "sla_compliance_target_percent": 95
+  },
+  "escalation_contacts": {
+    "level_1": ["security-team@company.com"],
+    "level_2": ["security-team@company.com", "security-lead@company.com", "devops-oncall@company.com"],
+    "level_3": ["security-team@company.com", "security-lead@company.com", "cto@company.com", "executive@company.com"]
+  }
+}
