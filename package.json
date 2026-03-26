@@ -1,0 +1,25 @@
+{
+  "name": "johnny-lab0",
+  "version": "1.0.0",
+  "description": "2026 Agentic Coding Framework - 智能編碼最佳實踐參考庫",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": ["agentic", "coding", "multi-agent", "security", "automation"],
+  "license": "MIT",
+  "dependencies": {
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  }
+}
