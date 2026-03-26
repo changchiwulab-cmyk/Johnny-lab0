@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "description": "代理能力註冊表與調度配置",
+  "max_parallel_agents": 4,
+  "agents": {
+    "implementation": {
+      "name": "ImplementationAgent",
+      "capabilities": [
+        "code_generation",
+        "code_modification",
+        "bug_fix",
+        "requirement_analysis"
+      ],
+      "priority": 1,
+      "timeout_ms": 30000
+    },
+    "testing": {
+      "name": "TestingAgent",
+      "capabilities": [
+        "unit_test",
+        "integration_test",
+        "coverage_analysis"
+      ],
+      "priority": 2,
+      "timeout_ms": 30000
+    },
+    "documentation": {
+      "name": "DocumentationAgent",
+      "capabilities": [
+        "api_docs",
+        "readme",
+        "changelog",
+        "inline_comments"
+      ],
+      "priority": 3,
+      "timeout_ms": 20000
+    },
+    "security": {
+      "name": "SecurityAgent",
+      "capabilities": [
+        "vulnerability_scan",
+        "dependency_audit",
+        "secret_detection",
+        "owasp_check"
+      ],
+      "priority": 2,
+      "timeout_ms": 20000
+    }
+  }
+}

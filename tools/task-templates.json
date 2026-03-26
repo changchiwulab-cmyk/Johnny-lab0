@@ -1,0 +1,133 @@
+{
+  "version": "1.0.0",
+  "description": "任務分解模板與代理分配規則",
+  "task_types": {
+    "feature": {
+      "description": "新功能開發",
+      "subtasks": ["analyze", "implement", "test", "document", "security_scan"],
+      "parallel_groups": [
+        ["analyze"],
+        ["implement"],
+        ["test", "document", "security_scan"]
+      ]
+    },
+    "bugfix": {
+      "description": "Bug 修復",
+      "subtasks": ["analyze", "implement", "test", "security_scan"],
+      "parallel_groups": [
+        ["analyze"],
+        ["implement"],
+        ["test", "security_scan"]
+      ]
+    },
+    "refactor": {
+      "description": "代碼重構",
+      "subtasks": ["analyze", "implement", "test", "document"],
+      "parallel_groups": [
+        ["analyze"],
+        ["implement"],
+        ["test", "document"]
+      ]
+    }
+  },
+  "subtask_definitions": {
+    "analyze": {
+      "name": "需求分析",
+      "description": "分析任務需求，識別影響範圍",
+      "agent": "implementation",
+      "default_priority": "high"
+    },
+    "implement": {
+      "name": "代碼實現",
+      "description": "編寫或修改代碼",
+      "agent": "implementation",
+      "default_priority": "high"
+    },
+    "test": {
+      "name": "測試生成",
+      "description": "生成單元測試和集成測試",
+      "agent": "testing",
+      "default_priority": "high"
+    },
+    "document": {
+      "name": "文檔同步",
+      "description": "更新 API 文檔、README、變更日誌",
+      "agent": "documentation",
+      "default_priority": "medium"
+    },
+    "security_scan": {
+      "name": "安全掃描",
+      "description": "執行漏洞掃描、依賴審計、密鑰檢測",
+      "agent": "security",
+      "default_priority": "high"
+    }
+  },
+  "priority_weights": {
+    "critical": 4,
+    "high": 3,
+    "medium": 2,
+    "low": 1
+  },
+  "complexity_keywords": {
+    "high": [
+      "database",
+      "migration",
+      "security",
+      "authentication",
+      "payment",
+      "encryption",
+      "distributed",
+      "concurrent",
+      "race condition"
+    ],
+    "medium": [
+      "api",
+      "endpoint",
+      "component",
+      "service",
+      "module",
+      "interface",
+      "integration"
+    ],
+    "low": [
+      "typo",
+      "comment",
+      "rename",
+      "style",
+      "format",
+      "config"
+    ]
+  },
+  "classification_keywords": {
+    "feature": [
+      "add",
+      "new",
+      "create",
+      "implement",
+      "build",
+      "introduce",
+      "support"
+    ],
+    "bugfix": [
+      "fix",
+      "bug",
+      "error",
+      "crash",
+      "issue",
+      "broken",
+      "fail",
+      "wrong",
+      "incorrect"
+    ],
+    "refactor": [
+      "refactor",
+      "clean",
+      "reorganize",
+      "restructure",
+      "simplify",
+      "optimize",
+      "improve",
+      "extract"
+    ]
+  }
+}
