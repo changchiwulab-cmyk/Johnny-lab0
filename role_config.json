@@ -1,0 +1,155 @@
+{
+  "roles": {
+    "developer": {
+      "name": "developer",
+      "description": "Full development access",
+      "department": "engineering",
+      "permissions": [
+        "Read",
+        "Write",
+        "Edit",
+        "Bash(git:*)",
+        "Bash(npm:*)",
+        "Bash(*)"
+      ],
+      "max_concurrent_tasks": 20,
+      "allowed_templates": [
+        "legal_review",
+        "ops_automation",
+        "marketing_report",
+        "custom_template"
+      ]
+    },
+    "engineer_lead": {
+      "name": "engineer_lead",
+      "description": "Engineering team lead",
+      "department": "engineering",
+      "permissions": [
+        "Read",
+        "Write",
+        "Edit",
+        "Bash(git:*)",
+        "Bash(npm:*)",
+        "Bash(*)"
+      ],
+      "max_concurrent_tasks": 20,
+      "allowed_templates": [
+        "legal_review",
+        "ops_automation",
+        "marketing_report",
+        "custom_template"
+      ]
+    },
+    "security_team": {
+      "name": "security_team",
+      "description": "Security team member",
+      "department": "security",
+      "permissions": [
+        "Read",
+        "Bash(audit|scan)"
+      ],
+      "max_concurrent_tasks": 10,
+      "allowed_templates": ["legal_review"]
+    },
+    "legal_team": {
+      "name": "legal_team",
+      "description": "Legal team member",
+      "department": "legal",
+      "permissions": [
+        "Read",
+        "Edit"
+      ],
+      "max_concurrent_tasks": 5,
+      "allowed_templates": ["legal_review"]
+    },
+    "operations": {
+      "name": "operations",
+      "description": "Operations automation",
+      "department": "operations",
+      "permissions": [
+        "Read",
+        "Edit",
+        "Bash(npm:install)"
+      ],
+      "max_concurrent_tasks": 10,
+      "allowed_templates": ["ops_automation"]
+    },
+    "marketing": {
+      "name": "marketing",
+      "description": "Marketing team",
+      "department": "marketing",
+      "permissions": [
+        "Read",
+        "Edit"
+      ],
+      "max_concurrent_tasks": 5,
+      "allowed_templates": ["marketing_report"]
+    }
+  },
+  "permissions": {
+    "Read": {
+      "description": "Read access",
+      "actions": ["read", "list", "view"],
+      "scope": "view-only"
+    },
+    "Write": {
+      "description": "Write/create access",
+      "actions": ["write", "create", "append"],
+      "scope": "create-append"
+    },
+    "Edit": {
+      "description": "Edit existing files",
+      "actions": ["edit", "modify", "update"],
+      "scope": "modify-existing",
+      "restrictions": ["*.md", "*.json"]
+    },
+    "Bash(npm:*)": {
+      "description": "NPM commands",
+      "actions": ["bash", "npm", "yarn"],
+      "scope": "npm-yarn"
+    },
+    "Bash(git:*)": {
+      "description": "Git commands",
+      "actions": ["bash", "git"],
+      "scope": "git-vcs"
+    },
+    "Bash(audit|scan)": {
+      "description": "Security auditing",
+      "actions": ["bash", "audit", "scan"],
+      "scope": "security-scanning"
+    }
+  },
+  "templates": {
+    "legal_review": {
+      "description": "Automated legal contract review",
+      "required_permissions": ["Read", "Edit"],
+      "max_file_size_mb": 10,
+      "allowed_file_types": ["txt", "pdf", "docx"]
+    },
+    "ops_automation": {
+      "description": "Operations process automation",
+      "required_permissions": ["Read", "Edit", "Bash(npm:*)"],
+      "max_execution_time_seconds": 300
+    },
+    "marketing_report": {
+      "description": "Marketing reporting and analysis",
+      "required_permissions": ["Read", "Edit"],
+      "max_file_size_mb": 50
+    },
+    "custom_template": {
+      "description": "Custom template builder",
+      "required_permissions": ["Read", "Edit"],
+      "requires_approval": true
+    }
+  },
+  "enforcement": {
+    "mode": "strict",
+    "audit_logging": true,
+    "rate_limiting": {
+      "enabled": true,
+      "window_minutes": 60,
+      "requests_per_window": 1000
+    },
+    "permission_cache_ttl_seconds": 300
+  }
+}
