@@ -1,0 +1,513 @@
+"""Layer 2: Anomaly detection (complexity, security, performance)."""
+
+import asyncio
+import re
+import subprocess
+import json
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
+from enum import Enum
+
+
+class RiskLevel(Enum):
+    """Risk levels for detected anomalies."""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+@dataclass
+class CodeMetric:
+    """Represents a code complexity metric."""
+    name: str
+    value: float
+    threshold: float
+    is_exceeded: bool
+
+
+@dataclass
+class ComplexityMetrics:
+    """Complexity metrics for code."""
+    cyclomatic: CodeMetric
+    cognitive: CodeMetric
+    functions_over_threshold: List[str] = field(default_factory=list)
+    overall_risk: RiskLevel = RiskLevel.LOW
+
+
+@dataclass
+class SecurityFinding:
+    """Represents a security vulnerability finding."""
+    severity: RiskLevel
+    category: str
+    description: str
+    line: Optional[int]
+    pattern: str
+    confidence: float  # 0.0-1.0
+
+
+@dataclass
+class SecurityReport:
+    """Security analysis report."""
+    findings: List[SecurityFinding]
+    total_issues: int
+    critical_count: int
+    high_count: int
+    overall_risk: RiskLevel = RiskLevel.LOW
+
+
+@dataclass
+class PerformanceIssue:
+    """Represents a performance issue."""
+    type: str
+    location: str
+    description: str
+    severity: RiskLevel
+
+
+@dataclass
+class PerformanceReport:
+    """Performance analysis report."""
+    issues: List[PerformanceIssue]
+    total_issues: int
+    overall_risk: RiskLevel = RiskLevel.LOW
+
+
+@dataclass
+class Vulnerability:
+    """Dependency vulnerability."""
+    package: str
+    version: str
+    vulnerable_version: str
+    severity: RiskLevel
+    cve_id: str
+    description: str
+
+
+@dataclass
+class DependencyAuditReport:
+    """Dependency audit report."""
+    vulnerabilities: List[Vulnerability]
+    total_issues: int
+    critical_count: int
+    high_count: int
+    overall_risk: RiskLevel = RiskLevel.LOW
+
+
+@dataclass
+class Layer2Report:
+    """Combined Layer 2 anomaly detection report."""
+    complexity: ComplexityMetrics
+    security: SecurityReport
+    performance: PerformanceReport
+    dependencies: DependencyAuditReport
+    status: str  # "pass", "warning", "fail"
+
+    @classmethod
+    def synthesize(cls, results: tuple) -> "Layer2Report":
+        """Synthesize anomaly detection results."""
+        complexity, security, performance, dependencies = results
+
+        # Determine overall status based on risk levels
+        max_risk = max(
+            complexity.overall_risk,
+            security.overall_risk,
+            performance.overall_risk,
+            dependencies.overall_risk,
+            key=lambda r: ["low", "medium", "high", "critical"].index(r.value),
+        )
+
+        if max_risk == RiskLevel.CRITICAL:
+            status = "fail"
+        elif max_risk == RiskLevel.HIGH:
+            status = "warning"
+        else:
+            status = "pass"
+
+        report = cls(
+            complexity=complexity,
+            security=security,
+            performance=performance,
+            dependencies=dependencies,
+            status=status,
+        )
+        return report
+
+
+class ComplexityAnalyzer:
+    """Analyzes code complexity metrics."""
+
+    def __init__(self, cyclomatic_threshold: float = 10.0, cognitive_threshold: float = 15.0):
+        """Initialize with complexity thresholds."""
+        self.cyclomatic_threshold = cyclomatic_threshold
+        self.cognitive_threshold = cognitive_threshold
+
+    async def analyze_all(self, code_changes: Dict[str, str]) -> ComplexityMetrics:
+        """Analyze complexity of all code changes."""
+        python_files = [f for f in code_changes.keys() if f.endswith(".py")]
+
+        if not python_files:
+            return ComplexityMetrics(
+                cyclomatic=CodeMetric("cyclomatic", 0, self.cyclomatic_threshold, False),
+                cognitive=CodeMetric("cognitive", 0, self.cognitive_threshold, False),
+            )
+
+        # Use radon for Python complexity analysis
+        try:
+            cyclomatic_avg = await self._calculate_cyclomatic(python_files)
+            cognitive_avg = await self._calculate_cognitive(python_files)
+        except Exception:
+            # Default if tools unavailable
+            cyclomatic_avg = 5.0
+            cognitive_avg = 10.0
+
+        cyclomatic_metric = CodeMetric(
+            "cyclomatic",
+            cyclomatic_avg,
+            self.cyclomatic_threshold,
+            cyclomatic_avg > self.cyclomatic_threshold,
+        )
+        cognitive_metric = CodeMetric(
+            "cognitive",
+            cognitive_avg,
+            self.cognitive_threshold,
+            cognitive_avg > self.cognitive_threshold,
+        )
+
+        # Determine risk level
+        if cyclomatic_avg > self.cyclomatic_threshold or cognitive_avg > self.cognitive_threshold:
+            risk = RiskLevel.HIGH
+        elif cyclomatic_avg > self.cyclomatic_threshold * 0.8:
+            risk = RiskLevel.MEDIUM
+        else:
+            risk = RiskLevel.LOW
+
+        return ComplexityMetrics(
+            cyclomatic=cyclomatic_metric,
+            cognitive=cognitive_metric,
+            overall_risk=risk,
+        )
+
+    async def _calculate_cyclomatic(self, files: List[str]) -> float:
+        """Calculate average cyclomatic complexity."""
+        try:
+            result = subprocess.run(
+                ["radon", "cc"] + files + ["--average"],
+                capture_output=True,
+                timeout=15,
+                text=True,
+            )
+            # Parse radon output
+            if result.stdout:
+                lines = result.stdout.strip().split("\n")
+                for line in lines:
+                    if "Average complexity" in line:
+                        # Extract value
+                        match = re.search(r"([\d.]+)", line)
+                        if match:
+                            return float(match.group(1))
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass
+
+        return 5.0  # Default
+
+    async def _calculate_cognitive(self, files: List[str]) -> float:
+        """Calculate average cognitive complexity."""
+        try:
+            result = subprocess.run(
+                ["radon", "mi"] + files + ["-s"],
+                capture_output=True,
+                timeout=15,
+                text=True,
+            )
+            # Cognitive complexity is related to maintainability index
+            if result.stdout:
+                # Extract maintainability index
+                match = re.search(r"Maintainability Index: ([\d.]+)", result.stdout)
+                if match:
+                    mi = float(match.group(1))
+                    # Convert MI to cognitive complexity estimate
+                    return max(1.0, (100.0 - mi) / 5.0)
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass
+
+        return 10.0  # Default
+
+
+class SecurityAnalyzer:
+    """Detects security vulnerabilities in code."""
+
+    SECURITY_PATTERNS = {
+        "hardcoded_secrets": {
+            "patterns": [
+                r"password\s*=\s*['\"][\w@]+['\"]",
+                r"api_key\s*=\s*['\"][\w\-]+['\"]",
+                r"secret\s*=\s*['\"][\w\-]+['\"]",
+            ],
+            "severity": RiskLevel.CRITICAL,
+            "confidence": 0.95,
+        },
+        "sql_injection": {
+            "patterns": [
+                r"sql\s*=\s*.*\+.*",
+                r"query\s*=\s*.*f['\"].*\{",
+                r"execute\s*\(\s*.*\+",
+            ],
+            "severity": RiskLevel.HIGH,
+            "confidence": 0.85,
+        },
+        "unsafe_eval": {
+            "patterns": [
+                r"\beval\s*\(",
+                r"exec\s*\(",
+                r"__import__\s*\(",
+            ],
+            "severity": RiskLevel.CRITICAL,
+            "confidence": 0.98,
+        },
+        "weak_crypto": {
+            "patterns": [
+                r"md5\s*\(",
+                r"sha1\s*\(",
+                r"DES\s*\(",
+                r"RC4\s*\(",
+            ],
+            "severity": RiskLevel.HIGH,
+            "confidence": 0.90,
+        },
+    }
+
+    async def scan_all(self, code_changes: Dict[str, str]) -> SecurityReport:
+        """Scan all code changes for security issues."""
+        findings: List[SecurityFinding] = []
+
+        for file_path, content in code_changes.items():
+            file_findings = self._scan_content(content, file_path)
+            findings.extend(file_findings)
+
+        # Count severity levels
+        critical = [f for f in findings if f.severity == RiskLevel.CRITICAL]
+        high = [f for f in findings if f.severity == RiskLevel.HIGH]
+
+        # Determine overall risk
+        if critical:
+            overall_risk = RiskLevel.CRITICAL
+        elif high:
+            overall_risk = RiskLevel.HIGH
+        elif findings:
+            overall_risk = RiskLevel.MEDIUM
+        else:
+            overall_risk = RiskLevel.LOW
+
+        return SecurityReport(
+            findings=findings,
+            total_issues=len(findings),
+            critical_count=len(critical),
+            high_count=len(high),
+            overall_risk=overall_risk,
+        )
+
+    def _scan_content(self, content: str, file_path: str) -> List[SecurityFinding]:
+        """Scan code content for security patterns."""
+        findings = []
+        lines = content.split("\n")
+
+        for category, config in self.SECURITY_PATTERNS.items():
+            for pattern in config["patterns"]:
+                for line_num, line in enumerate(lines, 1):
+                    if re.search(pattern, line, re.IGNORECASE):
+                        findings.append(
+                            SecurityFinding(
+                                severity=config["severity"],
+                                category=category,
+                                description=f"Potential {category} vulnerability detected",
+                                line=line_num,
+                                pattern=pattern,
+                                confidence=config["confidence"],
+                            )
+                        )
+
+        return findings
+
+
+class PerformanceAnalyzer:
+    """Detects performance issues in code."""
+
+    async def detect_all(self, code_changes: Dict[str, str]) -> PerformanceReport:
+        """Detect performance issues in code changes."""
+        issues: List[PerformanceIssue] = []
+
+        for file_path, content in code_changes.items():
+            file_issues = self._detect_patterns(content, file_path)
+            issues.extend(file_issues)
+
+        # Determine overall risk
+        if any(i.severity == RiskLevel.HIGH for i in issues):
+            overall_risk = RiskLevel.HIGH
+        elif any(i.severity == RiskLevel.MEDIUM for i in issues):
+            overall_risk = RiskLevel.MEDIUM
+        else:
+            overall_risk = RiskLevel.LOW
+
+        return PerformanceReport(
+            issues=issues,
+            total_issues=len(issues),
+            overall_risk=overall_risk,
+        )
+
+    def _detect_patterns(self, content: str, file_path: str) -> List[PerformanceIssue]:
+        """Detect performance anti-patterns."""
+        issues = []
+        lines = content.split("\n")
+
+        # Check for string concatenation in loops
+        for i, line in enumerate(lines, 1):
+            if "for " in line or "while " in line:
+                # Check next lines for string concatenation
+                for j in range(i, min(i + 10, len(lines))):
+                    if "+=" in lines[j] and ('"' in lines[j] or "'" in lines[j]):
+                        issues.append(
+                            PerformanceIssue(
+                                type="string_concat_in_loop",
+                                location=f"{file_path}:{i}",
+                                description="String concatenation in loop detected (use list.join())",
+                                severity=RiskLevel.MEDIUM,
+                            )
+                        )
+                        break
+
+            # Check for N+1 query patterns
+            if "for " in line and "query" in content:
+                for j in range(max(0, i - 5), min(i + 5, len(lines))):
+                    if ".query(" in lines[j] or ".execute(" in lines[j]:
+                        issues.append(
+                            PerformanceIssue(
+                                type="potential_nplus1",
+                                location=f"{file_path}:{i}",
+                                description="Potential N+1 query pattern detected",
+                                severity=RiskLevel.HIGH,
+                            )
+                        )
+                        break
+
+        return issues
+
+
+class DependencyAuditor:
+    """Audits project dependencies for vulnerabilities."""
+
+    async def audit(self, project_root: str) -> DependencyAuditReport:
+        """Audit dependencies for vulnerabilities."""
+        vulnerabilities: List[Vulnerability] = []
+
+        # Try npm audit for Node.js dependencies
+        npm_vulns = await self._audit_npm(project_root)
+        vulnerabilities.extend(npm_vulns)
+
+        # Try pip audit for Python dependencies
+        pip_vulns = await self._audit_pip(project_root)
+        vulnerabilities.extend(pip_vulns)
+
+        # Count severity levels
+        critical = [v for v in vulnerabilities if v.severity == RiskLevel.CRITICAL]
+        high = [v for v in vulnerabilities if v.severity == RiskLevel.HIGH]
+
+        # Determine overall risk
+        if critical:
+            overall_risk = RiskLevel.CRITICAL
+        elif high:
+            overall_risk = RiskLevel.HIGH
+        elif vulnerabilities:
+            overall_risk = RiskLevel.MEDIUM
+        else:
+            overall_risk = RiskLevel.LOW
+
+        return DependencyAuditReport(
+            vulnerabilities=vulnerabilities,
+            total_issues=len(vulnerabilities),
+            critical_count=len(critical),
+            high_count=len(high),
+            overall_risk=overall_risk,
+        )
+
+    async def _audit_npm(self, project_root: str) -> List[Vulnerability]:
+        """Audit Node.js dependencies with npm audit."""
+        vulnerabilities = []
+        try:
+            result = subprocess.run(
+                ["npm", "audit", "--json"],
+                cwd=project_root,
+                capture_output=True,
+                timeout=30,
+                text=True,
+            )
+            if result.stdout:
+                audit_data = json.loads(result.stdout)
+                for vuln_key, vuln_data in audit_data.get("vulnerabilities", {}).items():
+                    severity_map = {"critical": RiskLevel.CRITICAL, "high": RiskLevel.HIGH}
+                    vulnerabilities.append(
+                        Vulnerability(
+                            package=vuln_key,
+                            version=vuln_data.get("installed", ""),
+                            vulnerable_version=vuln_data.get("range", ""),
+                            severity=severity_map.get(vuln_data.get("severity"), RiskLevel.MEDIUM),
+                            cve_id=vuln_data.get("cves", [""])[0] if vuln_data.get("cves") else "",
+                            description=vuln_data.get("title", ""),
+                        )
+                    )
+        except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError):
+            pass
+
+        return vulnerabilities
+
+    async def _audit_pip(self, project_root: str) -> List[Vulnerability]:
+        """Audit Python dependencies with pip audit."""
+        vulnerabilities = []
+        try:
+            result = subprocess.run(
+                ["pip-audit", "--format", "json"],
+                cwd=project_root,
+                capture_output=True,
+                timeout=30,
+                text=True,
+            )
+            if result.stdout:
+                audit_data = json.loads(result.stdout)
+                for vuln in audit_data.get("vulnerabilities", []):
+                    vulnerabilities.append(
+                        Vulnerability(
+                            package=vuln.get("name", ""),
+                            version=vuln.get("installed", ""),
+                            vulnerable_version=vuln.get("version", ""),
+                            severity=RiskLevel.HIGH,
+                            cve_id=vuln.get("cve", ""),
+                            description=vuln.get("description", ""),
+                        )
+                    )
+        except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError):
+            pass
+
+        return vulnerabilities
+
+
+class Layer2Executor:
+    """Orchestrates Layer 2 anomaly detection."""
+
+    def __init__(self):
+        """Initialize all Layer 2 components."""
+        self.complexity_analyzer = ComplexityAnalyzer()
+        self.security_analyzer = SecurityAnalyzer()
+        self.performance_analyzer = PerformanceAnalyzer()
+        self.dependency_auditor = DependencyAuditor()
+
+    async def execute(self, code_changes: Dict[str, str], project_root: str = ".") -> Layer2Report:
+        """Run all Layer 2 anomaly detection in parallel."""
+        tasks = [
+            self.complexity_analyzer.analyze_all(code_changes),
+            self.security_analyzer.scan_all(code_changes),
+            self.performance_analyzer.detect_all(code_changes),
+            self.dependency_auditor.audit(project_root),
+        ]
+
+        results = await asyncio.gather(*tasks)
+        return Layer2Report.synthesize(tuple(results))

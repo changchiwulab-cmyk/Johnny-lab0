@@ -1,0 +1,210 @@
+{
+  "review_enabled": true,
+  "description": "Automated code review configuration for Trend 4 implementation",
+
+  "layer1": {
+    "description": "Automated checks (formatting, linting, types)",
+    "enabled": true,
+    "formatters": {
+      "python": {
+        "tool": "black",
+        "enabled": true,
+        "line_length": 88
+      },
+      "javascript": {
+        "tool": "prettier",
+        "enabled": true,
+        "semi": true,
+        "single_quote": false
+      },
+      "typescript": {
+        "tool": "prettier",
+        "enabled": true,
+        "semi": true
+      },
+      "json": {
+        "tool": "prettier",
+        "enabled": true
+      }
+    },
+    "linters": {
+      "python": {
+        "tools": ["flake8", "pylint"],
+        "enabled": true,
+        "ignore_codes": ["E501"]
+      },
+      "javascript": {
+        "tools": ["eslint"],
+        "enabled": true,
+        "config": ".eslintrc.json"
+      },
+      "typescript": {
+        "tools": ["eslint"],
+        "enabled": true
+      }
+    },
+    "type_checkers": {
+      "python": {
+        "tool": "mypy",
+        "enabled": true,
+        "strict": false
+      },
+      "typescript": {
+        "tool": "tsc",
+        "enabled": true
+      },
+      "javascript": {
+        "tool": "jsdoc",
+        "enabled": true
+      }
+    },
+    "coverage": {
+      "enabled": true,
+      "minimum_percentage": 85,
+      "fail_under": 70,
+      "required_for": ["impl", "lib", "core"]
+    }
+  },
+
+  "layer2": {
+    "description": "Anomaly detection (complexity, security, performance)",
+    "enabled": true,
+    "complexity": {
+      "enabled": true,
+      "cyclomatic_max": 10,
+      "cognitive_max": 15,
+      "flag_threshold": 8,
+      "tool": "radon"
+    },
+    "security": {
+      "enabled": true,
+      "patterns": [
+        "hardcoded_secrets",
+        "sql_injection",
+        "unsafe_eval",
+        "weak_crypto",
+        "xss_vulnerabilities"
+      ],
+      "owasp_level": "top10",
+      "confidence_threshold": 0.7
+    },
+    "performance": {
+      "enabled": true,
+      "check_nplus1": true,
+      "check_loops": true,
+      "check_recursion": true,
+      "check_memory": true
+    },
+    "dependencies": {
+      "enabled": true,
+      "check_vulnerabilities": true,
+      "check_licenses": true,
+      "allowed_licenses": [
+        "MIT",
+        "Apache-2.0",
+        "BSD",
+        "ISC",
+        "GPL-2.0",
+        "GPL-3.0"
+      ],
+      "tools": ["npm_audit", "pip_audit", "snyk"]
+    }
+  },
+
+  "layer3": {
+    "description": "Human approval gates",
+    "enabled": true,
+    "approval_rules": {
+      "critical": {
+        "auto_approve": false,
+        "required_roles": ["tech_lead", "security_team"],
+        "min_reviewers": 2,
+        "time_estimate": 60
+      },
+      "high": {
+        "auto_approve": false,
+        "required_roles": ["lead_engineer"],
+        "min_reviewers": 1,
+        "time_estimate": 30
+      },
+      "medium": {
+        "auto_approve": false,
+        "required_roles": ["engineer"],
+        "min_reviewers": 1,
+        "time_estimate": 15
+      },
+      "low": {
+        "auto_approve": true,
+        "required_roles": [],
+        "min_reviewers": 0,
+        "time_estimate": 5
+      }
+    },
+    "category_rules": {
+      "architecture": {
+        "keywords": ["design", "pattern", "refactor", "structure"],
+        "risk_level": "high",
+        "required_roles": ["architecture_team", "tech_lead"]
+      },
+      "security": {
+        "keywords": ["auth", "crypto", "permission", "password"],
+        "risk_level": "critical",
+        "required_roles": ["security_team"]
+      },
+      "business_logic": {
+        "keywords": ["rule", "validation", "calc", "formula"],
+        "risk_level": "medium",
+        "required_roles": ["lead_engineer"]
+      },
+      "api": {
+        "keywords": ["endpoint", "route", "api", "controller"],
+        "risk_level": "high",
+        "required_roles": ["api_lead"]
+      },
+      "database": {
+        "keywords": ["schema", "migration", "table", "index"],
+        "risk_level": "high",
+        "required_roles": ["dba_team"]
+      },
+      "dependency": {
+        "keywords": ["require", "import", "install", "package"],
+        "risk_level": "medium",
+        "required_roles": ["tech_lead"]
+      }
+    }
+  },
+
+  "performance": {
+    "max_review_time_seconds": 120,
+    "enable_caching": true,
+    "cache_ttl_seconds": 3600,
+    "parallel_execution": true,
+    "max_workers": 4
+  },
+
+  "notifications": {
+    "enabled": true,
+    "critical_issues_only": false,
+    "channels": ["log", "email"],
+    "escalation_threshold": "high"
+  },
+
+  "exclusions": {
+    "file_patterns": [
+      "test_*.py",
+      "*.test.js",
+      "*.min.js",
+      "*.min.css",
+      "node_modules/**",
+      ".git/**",
+      "__pycache__/**"
+    ],
+    "directories": [
+      "vendor/",
+      "dist/",
+      "build/",
+      ".venv/",
+      "env/"
+    ]
+  }
+}
