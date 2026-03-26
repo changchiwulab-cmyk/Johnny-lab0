@@ -1,0 +1,52 @@
+MUTUAL NON-DISCLOSURE AGREEMENT
+
+This Non-Disclosure Agreement ("Agreement") is entered into as of the Effective Date: January 15, 2026
+
+BETWEEN Acme Corporation AND Beta Technologies Inc.
+
+Party A: Acme Corporation
+Party B: Beta Technologies Inc.
+
+1. DEFINITIONS
+"Confidential Information" means any and all non-public information disclosed by either party to the other party, whether orally, in writing, or by any other means.
+"Permitted Purpose" means the evaluation of a potential business relationship between the parties.
+
+2. CONFIDENTIALITY OBLIGATIONS
+Each party agrees to maintain confidentiality of the other party's Confidential Information for a period of confidential 3 years from disclosure. The receiving party shall protect the Confidential Information using the same degree of care it uses to protect its own confidential information.
+
+3. PERMITTED USE
+The Receiving Party may use the Confidential Information only for the Permitted Purpose. Any other use may only be made with the prior written consent of the Disclosing Party.
+
+4. RETURN OF INFORMATION
+Upon termination of this Agreement, the Receiving Party shall promptly return or destroy all Confidential Information received from the Disclosing Party.
+
+5. LIABILITY
+The liability cap for any claims arising under this Agreement shall not exceed $1,000,000. Neither party shall be liable for any indirect, consequential damages, lost profits, or loss of data.
+
+6. TERMINATION
+Either party may terminate this Agreement with 30 days written notice. The obligations of confidentiality shall survive termination.
+
+7. PAYMENT TERMS
+If applicable, payment shall be made within 30 days of receipt of invoice.
+
+8. INTELLECTUAL PROPERTY
+Each party retains all intellectual property rights in its own Confidential Information. No license or right to use any patent, trademark, or copyright is granted under this Agreement.
+
+9. INDEMNIFICATION
+Each party agrees to indemnify and hold harmless the other party from any claims arising from the indemnifying party's breach of this Agreement. Each party shall maintain appropriate insurance coverage.
+
+10. DISPUTE RESOLUTION
+Any dispute arising out of or in connection with this Agreement shall be governed by the laws of the State of California. The parties agree to submit to the exclusive jurisdiction of the courts of California for any disputes.
+
+11. COMPLIANCE
+Both parties shall ensure compliance with all applicable laws and regulations, including data protection and privacy notice requirements.
+
+12. GOVERNING LAW
+This Agreement shall be governed by and construed in accordance with the laws of the State of California.
+
+Expiration Date: January 15, 2029
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the date first above written.
+
+_________________________         _________________________
+Acme Corporation                  Beta Technologies Inc.

@@ -1,0 +1,410 @@
+{
+  "version": "1.0.0",
+  "description": "法律規則和風險判斷標準引擎",
+  "contract_types": {
+    "NDA": {
+      "type_name": "保密協議 (Non-Disclosure Agreement)",
+      "required_clauses": [
+        "confidential_information_definition",
+        "obligations",
+        "permitted_use",
+        "return_of_information",
+        "term",
+        "remedies"
+      ],
+      "industry_standards": {
+        "liability_cap": 5000000,
+        "confidentiality_period": 5,
+        "permitted_uses": "Limited to specified business purpose"
+      },
+      "risk_keywords": [
+        "perpetual",
+        "unlimited liability",
+        "entire world",
+        "successors and assigns",
+        "no return of information",
+        "any purpose"
+      ]
+    },
+    "SLA": {
+      "type_name": "服務水平協議 (Service Level Agreement)",
+      "required_clauses": [
+        "service_level_objectives",
+        "uptime_guarantee",
+        "support_hours",
+        "response_time",
+        "remedies_for_breach",
+        "exclusions"
+      ],
+      "industry_standards": {
+        "liability_cap": 10000000,
+        "uptime_guarantee": 0.999,
+        "response_time_hours": 4
+      },
+      "risk_keywords": [
+        "best effort",
+        "no guarantee",
+        "except for",
+        "no liability",
+        "as-is basis",
+        "no SLA commitment"
+      ]
+    },
+    "MSA": {
+      "type_name": "主服務協議 (Master Service Agreement)",
+      "required_clauses": [
+        "services_description",
+        "payment_terms",
+        "support_and_maintenance",
+        "warranty",
+        "intellectual_property",
+        "confidentiality",
+        "liability_limitation",
+        "term_and_termination"
+      ],
+      "industry_standards": {
+        "liability_cap": 7500000,
+        "payment_terms_days": 30,
+        "warranty_months": 12
+      },
+      "risk_keywords": [
+        "unlimited damages",
+        "no warranty",
+        "perpetual license",
+        "without limitation",
+        "sole remedy"
+      ]
+    },
+    "Purchase": {
+      "type_name": "購銷合同 (Purchase Agreement)",
+      "required_clauses": [
+        "product_description",
+        "delivery_terms",
+        "payment_terms",
+        "warranty",
+        "acceptance_and_inspection",
+        "liability_limitation",
+        "intellectual_property",
+        "dispute_resolution"
+      ],
+      "industry_standards": {
+        "liability_cap": 3000000,
+        "warranty_months": 12,
+        "payment_terms_days": 30,
+        "delivery_days": 30
+      },
+      "risk_keywords": [
+        "as-is",
+        "no warranty",
+        "buyer assumes all risk",
+        "no returns",
+        "caveat emptor",
+        "sold as-is"
+      ]
+    },
+    "Employment": {
+      "type_name": "僱傭合同 (Employment Agreement)",
+      "required_clauses": [
+        "position_and_duties",
+        "compensation_and_benefits",
+        "at_will_employment",
+        "confidentiality",
+        "non_compete",
+        "non_solicitation",
+        "ip_ownership",
+        "termination",
+        "dispute_resolution"
+      ],
+      "industry_standards": {
+        "non_compete_period_years": 2,
+        "non_solicitation_period_years": 2,
+        "notice_period_days": 14,
+        "severance_weeks": 4
+      },
+      "risk_keywords": [
+        "unreasonable non-compete",
+        "perpetual restriction",
+        "excessive confidentiality",
+        "no notice period",
+        "no severance"
+      ]
+    },
+    "License": {
+      "type_name": "授權協議 (License Agreement)",
+      "required_clauses": [
+        "grant_of_license",
+        "scope_of_use",
+        "intellectual_property_rights",
+        "restrictions",
+        "term_and_termination",
+        "payment",
+        "warranty_and_support",
+        "limitation_of_liability"
+      ],
+      "industry_standards": {
+        "liability_cap": 2000000,
+        "license_term_years": 3,
+        "upfront_payment": 0.25
+      },
+      "risk_keywords": [
+        "perpetual license",
+        "exclusive worldwide license",
+        "all rights reserved",
+        "no sublicense",
+        "no transfer"
+      ]
+    },
+    "Partnership": {
+      "type_name": "合作協議 (Partnership Agreement)",
+      "required_clauses": [
+        "partnership_structure",
+        "capital_contribution",
+        "profit_loss_sharing",
+        "governance",
+        "decision_making",
+        "dispute_resolution",
+        "exit_mechanisms",
+        "confidentiality"
+      ],
+      "industry_standards": {
+        "liability_cap": 5000000,
+        "notice_period_months": 3,
+        "profit_sharing_fairness": "Equal or as agreed"
+      },
+      "risk_keywords": [
+        "unlimited personal liability",
+        "no exit clause",
+        "unanimous consent required",
+        "no buyout provision",
+        "no dissolution clause"
+      ]
+    }
+  },
+  "risk_severity_mapping": {
+    "HIGH": {
+      "description": "重大法律或財務風險，必須在簽署前解決",
+      "action": "立即聯繫對方協商",
+      "examples": [
+        "Unlimited liability",
+        "Perpetual confidentiality",
+        "Missing critical clauses",
+        "Unreasonable restrictions"
+      ]
+    },
+    "MEDIUM": {
+      "description": "中等風險，應該在簽署前解決但可協商",
+      "action": "在協商中提出修改",
+      "examples": [
+        "Below-market liability cap",
+        "Longer-than-standard term",
+        "Unclear payment terms",
+        "Restrictive IP clauses"
+      ]
+    },
+    "LOW": {
+      "description": "低風險，為最佳實踐改進",
+      "action": "在資源允許時改進",
+      "examples": [
+        "Non-standard formatting",
+        "Missing best-practice clauses",
+        "Could be more explicit",
+        "Nice-to-have improvements"
+      ]
+    }
+  },
+  "compliance_requirements": {
+    "data_protection": {
+      "CCPA": {
+        "jurisdiction": "California",
+        "full_name": "California Consumer Privacy Act",
+        "requirements": [
+          "Right to know",
+          "Right to delete",
+          "Right to opt-out of sale",
+          "Right to non-discrimination",
+          "Contract disclosures"
+        ]
+      },
+      "GDPR": {
+        "jurisdiction": "EU",
+        "full_name": "General Data Protection Regulation",
+        "requirements": [
+          "Data controller/processor roles",
+          "Data protection impact assessment",
+          "Data breach notification",
+          "Privacy by design",
+          "Data subject rights"
+        ]
+      },
+      "PIPEDA": {
+        "jurisdiction": "Canada",
+        "full_name": "Personal Information Protection and Electronic Documents Act",
+        "requirements": [
+          "Accountability principle",
+          "Identifying purposes",
+          "Consent and use",
+          "Accuracy of information"
+        ]
+      }
+    },
+    "liability_clauses": {
+      "maximum_cap_percentage": 0.5,
+      "should_exclude_consequential": true,
+      "should_exclude_indirect": true,
+      "should_exclude_lost_profits": true,
+      "reasonable_indemnification": true
+    },
+    "intellectual_property": {
+      "ownership_must_be_clear": true,
+      "license_scope_must_be_defined": true,
+      "should_address_derivative_works": true,
+      "open_source_disclosure_required": true
+    },
+    "dispute_resolution": {
+      "must_specify_jurisdiction": true,
+      "should_have_escalation_process": true,
+      "arbitration_preferred": false,
+      "attorney_fees_coverage": true
+    }
+  },
+  "industry_benchmarks": {
+    "liability_cap": {
+      "NDA": 5000000,
+      "SLA": 10000000,
+      "MSA": 7500000,
+      "Purchase": 3000000,
+      "Employment": 1000000,
+      "License": 2000000,
+      "Partnership": 5000000
+    },
+    "confidentiality_period_years": {
+      "NDA": 5,
+      "SLA": 3,
+      "MSA": 5,
+      "Purchase": 0,
+      "Employment": 2,
+      "License": 3,
+      "Partnership": 5
+    },
+    "payment_terms_days": {
+      "NDA": 0,
+      "SLA": 30,
+      "MSA": 30,
+      "Purchase": 30,
+      "Employment": 0,
+      "License": 30,
+      "Partnership": 0
+    },
+    "notice_period_days": {
+      "NDA": 30,
+      "SLA": 30,
+      "MSA": 60,
+      "Purchase": 0,
+      "Employment": 14,
+      "License": 30,
+      "Partnership": 90
+    }
+  },
+  "red_flags": [
+    {
+      "keyword": "perpetual",
+      "severity": "HIGH",
+      "reason": "永久性條款可能導致無限責任或期限"
+    },
+    {
+      "keyword": "unlimited",
+      "severity": "HIGH",
+      "reason": "無限制通常意味著無法預測的風險敞口"
+    },
+    {
+      "keyword": "entire world",
+      "severity": "MEDIUM",
+      "reason": "全球適用可能超出業務需求"
+    },
+    {
+      "keyword": "no warranty",
+      "severity": "MEDIUM",
+      "reason": "無保證可能表示產品或服務質量風險"
+    },
+    {
+      "keyword": "as-is",
+      "severity": "MEDIUM",
+      "reason": "原樣交付可能意味著沒有責任保證"
+    },
+    {
+      "keyword": "sole and exclusive remedy",
+      "severity": "MEDIUM",
+      "reason": "單一補救措施可能限制賠償選項"
+    },
+    {
+      "keyword": "indemnify and hold harmless",
+      "severity": "MEDIUM",
+      "reason": "賠償條款範圍需要仔細審查"
+    },
+    {
+      "keyword": "non-compete",
+      "severity": "MEDIUM",
+      "reason": "競業禁止需要評估其合理性和可執行性"
+    }
+  ],
+  "clause_templates": {
+    "confidentiality": {
+      "title": "保密條款",
+      "key_elements": [
+        "定義機密信息",
+        "例外情況",
+        "使用限制",
+        "保密期限",
+        "返還要求",
+        "補救措施"
+      ],
+      "benchmark_period": "3-5 years"
+    },
+    "liability_limitation": {
+      "title": "責任限制條款",
+      "key_elements": [
+        "責任上限金額",
+        "排除間接損害",
+        "排除利潤損失",
+        "排除數據損失",
+        "例外情況",
+        "保險要求"
+      ],
+      "benchmark_cap": "1-2x annual value or fixed amount"
+    },
+    "intellectual_property": {
+      "title": "知識產權條款",
+      "key_elements": [
+        "所有權明確",
+        "許可授予",
+        "許可範圍",
+        "衍生作品",
+        "反向工程",
+        "開源披露"
+      ]
+    },
+    "dispute_resolution": {
+      "title": "爭議解決條款",
+      "key_elements": [
+        "管轄權",
+        "準據法",
+        "仲裁與訴訟選擇",
+        "成本分配",
+        "保密性",
+        "上訴權"
+      ]
+    },
+    "termination": {
+      "title": "終止條款",
+      "key_elements": [
+        "終止事由",
+        "通知期限",
+        "無因終止",
+        "有因終止",
+        "終止後的義務",
+        "遣散或轉移"
+      ],
+      "benchmark_notice": "30-60 days"
+    }
+  }
+}
