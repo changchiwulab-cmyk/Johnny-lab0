@@ -67,7 +67,7 @@ class RiskAssessor:
     }
     API_KEYWORDS = {
         "endpoint", "route", "api", "controller", "request", "response",
-        "handler", "handler", "middleware"
+        "handler", "middleware"
     }
     DATABASE_KEYWORDS = {
         "schema", "migration", "table", "column", "index", "query",

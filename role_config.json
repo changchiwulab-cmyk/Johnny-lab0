@@ -22,7 +22,7 @@
     },
     "engineer_lead": {
       "name": "engineer_lead",
-      "description": "Engineering team lead",
+      "description": "Engineering team lead with full access and audit oversight",
       "department": "engineering",
       "permissions": [
         "Read",
@@ -30,7 +30,8 @@
         "Edit",
         "Bash(git:*)",
         "Bash(npm:*)",
-        "Bash(*)"
+        "Bash(*)",
+        "Bash(audit|scan)"
       ],
       "max_concurrent_tasks": 20,
       "allowed_templates": [
@@ -46,7 +47,8 @@
       "department": "security",
       "permissions": [
         "Read",
-        "Bash(audit|scan)"
+        "Bash(audit|scan)",
+        "Bash(search)"
       ],
       "max_concurrent_tasks": 10,
       "allowed_templates": ["legal_review"]
@@ -69,7 +71,7 @@
       "permissions": [
         "Read",
         "Edit",
-        "Bash(npm:install)"
+        "Bash(npm:*)"
       ],
       "max_concurrent_tasks": 10,
       "allowed_templates": ["ops_automation"]
