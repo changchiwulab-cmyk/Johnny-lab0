@@ -1,0 +1,35 @@
+{
+  "threat_detection": {
+    "enabled": true,
+    "scan_frequency": "on_commit",
+    "severity_threshold": "medium",
+    "detection_patterns": {
+      "sql_injection": true,
+      "xss": true,
+      "secrets": true,
+      "weak_crypto": true,
+      "command_injection": true,
+      "unsafe_eval": true
+    }
+  },
+  "vulnerability_scanning": {
+    "enabled": true,
+    "scan_targets": ["code", "dependencies"],
+    "tools": {
+      "npm_audit": false,
+      "pip_audit": false
+    }
+  },
+  "auto_remediation": {
+    "enabled": false,
+    "auto_patch_dependencies": false
+  },
+  "compliance": {
+    "standards": ["owasp"],
+    "required_coverage_percentage": 90
+  },
+  "monitoring": {
+    "enabled": true,
+    "alert_channels": ["log"]
+  }
+}
