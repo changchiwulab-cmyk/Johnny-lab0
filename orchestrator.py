@@ -13,6 +13,10 @@ import json
 import logging
 import sys
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import anthropic
 
 from agents import (
