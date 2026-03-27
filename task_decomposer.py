@@ -142,8 +142,8 @@ class TaskDecomposer:
                     )
                 )
 
-        # Add documentation
-        if "document" not in task.lower():
+        # Add documentation (skip only if task is purely documentation)
+        if primary_intent != TaskType.DOCUMENTATION:
             subtasks.append(
                 SubTask(
                     id="doc",

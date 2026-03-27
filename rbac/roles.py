@@ -27,6 +27,14 @@ class Role:
     max_concurrent_tasks: int = 10
     allowed_templates: Set[str] = field(default_factory=set)
 
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        if not isinstance(other, Role):
+            return NotImplemented
+        return self.name == other.name
+
 
 class RoleManager:
     """Manages role definitions and role hierarchy."""
@@ -60,8 +68,9 @@ class RoleManager:
             Permission.EDIT,
             Permission.BASH_ALL,
             Permission.BASH_GIT,
+            Permission.BASH_AUDIT,
         },
-        description="Engineering team lead with full access",
+        description="Engineering team lead with full access and audit oversight",
         department="engineering",
         max_concurrent_tasks=20,
         allowed_templates={
