@@ -1,0 +1,32 @@
+{
+  "simple_feature": {
+    "description": "Add user authentication with JWT tokens to the Express API. Include login, logout, and token refresh endpoints.",
+    "type": "feature",
+    "expectedComplexity": "high",
+    "expectedSubtaskCount": 5
+  },
+  "bugfix": {
+    "description": "Fix the race condition in the database connection pool that causes timeout errors under high load.",
+    "type": "bugfix",
+    "expectedComplexity": "high",
+    "expectedSubtaskCount": 4
+  },
+  "refactor": {
+    "description": "Refactor the payment processing module to use the strategy pattern instead of switch-case statements.",
+    "type": "refactor",
+    "expectedComplexity": "high",
+    "expectedSubtaskCount": 4
+  },
+  "simple_bugfix": {
+    "description": "Fix typo in the configuration file that causes a style error.",
+    "type": "bugfix",
+    "expectedComplexity": "low",
+    "expectedSubtaskCount": 4
+  },
+  "api_feature": {
+    "description": "Create new API endpoint for user profile management with CRUD operations.",
+    "type": "feature",
+    "expectedComplexity": "medium",
+    "expectedSubtaskCount": 5
+  }
+}

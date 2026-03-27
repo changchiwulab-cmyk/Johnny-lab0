@@ -1,0 +1,24 @@
+{
+  "name": "multi-agent-orchestration",
+  "version": "1.0.0",
+  "description": "Multi-agent orchestration framework - Trend 2 reference implementation",
+  "scripts": {
+    "test": "jest --verbose",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "demo": "node agents/orchestration-engine.js"
+  },
+  "keywords": [
+    "multi-agent",
+    "orchestration",
+    "dag",
+    "scheduling"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "jest": "^30.3.0",
+    "prettier": "^3.0.0"
+  }
+}
