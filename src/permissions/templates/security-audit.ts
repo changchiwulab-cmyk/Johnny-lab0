@@ -1,0 +1,66 @@
+import { WorkflowTemplate } from "./legal-review";
+
+export const securityAuditTemplate: WorkflowTemplate = {
+  id: "security-audit",
+  name: "安全審計",
+  description: "安全部門自動化審計流程：掃描、分析、分類、報告",
+  department: "security",
+  steps: [
+    {
+      id: "sec-1",
+      name: "啟動審計",
+      description: "定義審計範圍與目標",
+      requiredRole: "security",
+      actions: ["read:*", "execute:scan:*"],
+      autoExecute: false,
+    },
+    {
+      id: "sec-2",
+      name: "依賴漏洞掃描",
+      description: "掃描所有依賴項的已知漏洞",
+      requiredRole: "security",
+      actions: ["execute:npm:audit", "execute:scan:*"],
+      autoExecute: true,
+    },
+    {
+      id: "sec-3",
+      name: "靜態代碼分析",
+      description: "SAST 掃描常見安全漏洞模式",
+      requiredRole: "security",
+      actions: ["read:*", "execute:scan:*"],
+      autoExecute: true,
+    },
+    {
+      id: "sec-4",
+      name: "密鑰洩露檢測",
+      description: "掃描代碼中的密鑰、令牌、密碼",
+      requiredRole: "security",
+      actions: ["read:*", "execute:scan:*"],
+      autoExecute: true,
+    },
+    {
+      id: "sec-5",
+      name: "風險分類",
+      description: "對發現的問題進行嚴重度分類與優先級排序",
+      requiredRole: "security",
+      actions: ["read:*", "execute:audit:*"],
+      autoExecute: true,
+    },
+    {
+      id: "sec-6",
+      name: "生成審計報告",
+      description: "輸出完整安全審計報告",
+      requiredRole: "security",
+      actions: ["read:*", "execute:audit:*"],
+      autoExecute: true,
+    },
+    {
+      id: "sec-7",
+      name: "安全主管審批",
+      description: "安全主管審閱報告並制定修復計劃",
+      requiredRole: "security",
+      actions: ["read:*"],
+      autoExecute: false,
+    },
+  ],
+};
