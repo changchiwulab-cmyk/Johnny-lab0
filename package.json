@@ -1,0 +1,23 @@
+{
+  "name": "test-automation-hooks",
+  "version": "1.0.0",
+  "description": "Test automation hooks for code quality and security",
+  "scripts": {
+    "test": "jest --verbose",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "audit": "npm audit"
+  },
+  "keywords": [
+    "testing",
+    "automation",
+    "hooks"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "jest": "^30.3.0",
+    "prettier": "^3.0.0"
+  }
+}
