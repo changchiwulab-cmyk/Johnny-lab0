@@ -118,7 +118,7 @@ class SecurityAnalyzer:
         """Initialize with unified security patterns."""
         self.vulnerability_patterns = SecurityPatterns.VULNERABILITY_PATTERNS
 
-    def scan_all(self, code_changes: Dict[str, str]) -> AnalysisReport:
+    async def scan_all(self, code_changes: Dict[str, str]) -> AnalysisReport:
         """Scan all code changes for security issues (CPU-bound, synchronous)."""
         findings: List[Finding] = []
 
@@ -185,7 +185,7 @@ class SecurityAnalyzer:
 class PerformanceAnalyzer:
     """Detects performance issues in code."""
 
-    def detect_all(self, code_changes: Dict[str, str]) -> AnalysisReport:
+    async def detect_all(self, code_changes: Dict[str, str]) -> AnalysisReport:
         """Detect performance issues in code changes."""
         issues: List[Finding] = []
 

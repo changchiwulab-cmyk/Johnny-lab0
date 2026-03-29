@@ -179,7 +179,7 @@ subprocess.run("ls", shell=True)
     @pytest.mark.asyncio
     async def test_layer2_security_analyzer_returns_analysis_report(self):
         """Test that security analyzer returns unified AnalysisReport with Findings."""
-        result = self.executor.security_analyzer.scan_all(self.sample_code)
+        result = await self.executor.security_analyzer.scan_all(self.sample_code)
 
         assert isinstance(result, AnalysisReport)
         assert result.analysis_type == "security"
@@ -195,7 +195,7 @@ subprocess.run("ls", shell=True)
     @pytest.mark.asyncio
     async def test_layer2_performance_analyzer_returns_analysis_report(self):
         """Test that performance analyzer returns unified AnalysisReport."""
-        result = self.executor.performance_analyzer.detect_all(self.sample_code)
+        result = await self.executor.performance_analyzer.detect_all(self.sample_code)
 
         assert isinstance(result, AnalysisReport)
         assert result.analysis_type == "performance"
