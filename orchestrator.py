@@ -38,7 +38,7 @@ class OrchestratorAgent:
         review_config = self.config.get_review_config()
         self.layer1_executor = Layer1Executor(config=review_config)
         self.layer2_executor = Layer2Executor(config=review_config)
-        self.layer3_executor = Layer3Executor(config=review_config)
+        self.layer3_executor = Layer3Executor()  # Layer 3 doesn't require config
         self.execution_history = []
         self.review_reports = {}
 
