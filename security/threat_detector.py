@@ -55,10 +55,10 @@ class ThreatDetector:
         self.vulnerability_patterns = SecurityPatterns.VULNERABILITY_PATTERNS
         self.secret_patterns = SecurityPatterns.SECRET_PATTERNS
 
-    async def detect_code_vulnerabilities(
+    def detect_code_vulnerabilities(
         self, code: str, language: str = "python"
     ) -> List[Threat]:
-        """Detect code vulnerabilities using shared patterns."""
+        """Detect code vulnerabilities using shared patterns (CPU-bound, synchronous)."""
         threats = []
         lines = code.split("\n")
 
@@ -80,8 +80,8 @@ class ThreatDetector:
 
         return threats
 
-    async def detect_secrets(self, code: str) -> List[Threat]:
-        """Detect hardcoded secrets using shared patterns."""
+    def detect_secrets(self, code: str) -> List[Threat]:
+        """Detect hardcoded secrets using shared patterns (CPU-bound, synchronous)."""
         threats = []
         lines = code.split("\n")
 
@@ -105,8 +105,8 @@ class ThreatDetector:
 
         return threats
 
-    async def detect_dependency_threats(self, dependencies: Dict) -> List[Threat]:
-        """Detect threats in dependencies."""
+    def detect_dependency_threats(self, dependencies: Dict) -> List[Threat]:
+        """Detect threats in dependencies (synchronous)."""
         # Simplified version - would integrate with npm audit / pip audit in production
         threats = []
 
@@ -135,8 +135,8 @@ class ThreatDetector:
 
         return threats
 
-    async def assess_threat_level(self, threats: List[Threat]) -> ThreatSeverity:
-        """Assess overall threat level."""
+    def assess_threat_level(self, threats: List[Threat]) -> ThreatSeverity:
+        """Assess overall threat level (synchronous)."""
         if not threats:
             return ThreatSeverity.LOW
 
