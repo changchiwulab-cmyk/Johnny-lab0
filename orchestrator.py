@@ -1,20 +1,28 @@
-"""Main orchestrator for multi-agent task execution."""
+"""Main orchestrator for multi-agent task execution with integrated review system."""
 
 import asyncio
 import networkx as nx
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Optional
 from task_decomposer import TaskDecomposer
 from agents.code_agent import CodeAgent
 from agents.test_agent import TestAgent
 from agents.doc_agent import DocAgent
 from agents.security_agent import SecurityAgent
+from review_system import (
+    Layer1Executor,
+    Layer1Report,
+    Layer2Executor,
+    Layer2Report,
+    Layer3Executor,
+    ApprovalRequest,
+)
 
 
 class OrchestratorAgent:
     """Orchestrates multiple specialized agents for complex task execution."""
 
     def __init__(self):
-        """Initialize orchestrator with all available agents."""
+        """Initialize orchestrator with all available agents and review system."""
         self.decomposer = TaskDecomposer()
         self.agents = {
             "code_agent": CodeAgent(),
@@ -22,7 +30,12 @@ class OrchestratorAgent:
             "doc_agent": DocAgent(),
             "security_agent": SecurityAgent(),
         }
+        # Initialize three-layer review system
+        self.layer1_executor = Layer1Executor()
+        self.layer2_executor = Layer2Executor()
+        self.layer3_executor = Layer3Executor()
         self.execution_history = []
+        self.review_reports = {}
 
     def decompose_task(self, task: str) -> nx.DiGraph:
         """
@@ -130,21 +143,71 @@ class OrchestratorAgent:
             )
             return task_id, error_msg
 
+    async def _perform_review(self, code: str) -> Dict:
+        """
+        Perform three-layer review on generated code.
+
+        Args:
+            code: Generated code to review
+
+        Returns:
+            Dictionary containing all three layer reports
+        """
+        print("\n🔍 Performing three-layer automated review...")
+
+        code_changes = {"generated.py": code}
+        review_results = {}
+
+        try:
+            # Layer 1: Automated checks (formatting, linting, type checking)
+            print("   Layer 1: Running automated checks...")
+            layer1_report = await self.layer1_executor.execute(code_changes)
+            review_results["layer1"] = layer1_report
+            print(f"      ✓ Found {layer1_report.total_issues} issues")
+
+            # Layer 2: Anomaly detection (complexity, security, performance)
+            print("   Layer 2: Detecting anomalies...")
+            layer2_report = await self.layer2_executor.execute(code_changes)
+            review_results["layer2"] = layer2_report
+            print(f"      ✓ Risk level: {layer2_report.overall_risk}")
+
+            # Layer 3: Human approval gates
+            print("   Layer 3: Generating approval requirements...")
+            approval_req = self.layer3_executor.execute(
+                code, layer1_report, layer2_report
+            )
+            review_results["layer3"] = approval_req
+            print(f"      ✓ Requires {len(approval_req.required_approvers)} approvers")
+
+        except Exception as e:
+            print(f"   ⚠️  Review failed: {str(e)}")
+            review_results["error"] = str(e)
+
+        self.review_reports = review_results
+        return review_results
+
     def synthesize_results(self, results: Dict[str, str]) -> Dict:
         """
-        Synthesize results from all agents into a comprehensive output.
+        Synthesize results from all agents with integrated review reports.
 
         Args:
             results: Dictionary mapping task IDs to outputs
 
         Returns:
-            Synthesized final output
+            Synthesized final output with review reports
         """
         synthesis = {
             "code": results.get("impl", ""),
             "tests": results.get("test", ""),
             "documentation": results.get("doc", ""),
             "security_report": results.get("security", ""),
+            # Include three-layer review reports
+            "review": {
+                "layer1": self.review_reports.get("layer1"),
+                "layer2": self.review_reports.get("layer2"),
+                "layer3": self.review_reports.get("layer3"),
+                "error": self.review_reports.get("error"),
+            },
             "execution_summary": {
                 "tasks_completed": len(results),
                 "total_agents_used": len(
@@ -154,19 +217,25 @@ class OrchestratorAgent:
                         if task_id in ["impl", "test", "doc", "security"]
                     )
                 ),
+                "review_completed": bool(self.review_reports),
+                "review_risk_level": (
+                    self.review_reports.get("layer2").overall_risk
+                    if self.review_reports.get("layer2")
+                    else None
+                ),
             },
         }
         return synthesis
 
     async def execute(self, task: str) -> Dict:
         """
-        Execute the full orchestration pipeline.
+        Execute the full orchestration pipeline with integrated review.
 
         Args:
             task: High-level task description
 
         Returns:
-            Synthesized results from all agents
+            Synthesized results with review reports
         """
         print(f"\n🚀 Starting orchestration for: {task}\n")
 
@@ -184,7 +253,14 @@ class OrchestratorAgent:
         print("\n⚙️ Executing agents in parallel...")
         results = await self.execute_parallel(task, dag, execution_layers)
 
-        # Step 4: Synthesize results
+        # Step 4: Perform three-layer review (NEW)
+        generated_code = results.get("impl", "")
+        if generated_code:
+            await self._perform_review(generated_code)
+        else:
+            print("\n⚠️  No code generated - skipping review")
+
+        # Step 5: Synthesize results
         print("\n🔗 Synthesizing results...")
         final_output = self.synthesize_results(results)
 

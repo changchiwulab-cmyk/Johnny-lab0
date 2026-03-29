@@ -5,14 +5,20 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List, Dict, Optional
 from datetime import datetime
+from shared.security_patterns import SecurityPatterns, SecurityLevel
 
 
 class ThreatSeverity(Enum):
-    """Threat severity levels."""
+    """Threat severity levels (aliases for SecurityLevel)."""
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
+
+    @classmethod
+    def from_security_level(cls, level: SecurityLevel) -> "ThreatSeverity":
+        """Convert SecurityLevel to ThreatSeverity."""
+        return cls(level.value)
 
 
 @dataclass
@@ -40,89 +46,34 @@ class ThreatDetectionResult:
 
 
 class ThreatDetector:
-    """Detects security threats in code."""
-
-    # Detection patterns
-    VULNERABILITY_PATTERNS = {
-        "sql_injection": {
-            "patterns": [
-                r"execute\s*\(\s*['\"].*\+",
-                r"query\s*\(\s*['\"].*\+",
-                r"SELECT\s+.*\+\s*['\"]",
-                r"FROM\s+.*\+\s*['\"]",
-            ],
-            "severity": ThreatSeverity.CRITICAL,
-            "remediation": "Use parameterized queries",
-        },
-        "xss": {
-            "patterns": [
-                r"innerHTML\s*=\s*[^'\"]*\$",
-                r"eval\s*\(",
-                r"document\.write\s*\(",
-            ],
-            "severity": ThreatSeverity.HIGH,
-            "remediation": "Use textContent or sanitize HTML",
-        },
-        "command_injection": {
-            "patterns": [
-                r"exec\s*\(\s*['\"].*\+",
-                r"system\s*\(\s*['\"].*\+",
-                r"os\.popen\s*\(\s*['\"].*\+",
-            ],
-            "severity": ThreatSeverity.CRITICAL,
-            "remediation": "Use subprocess with shell=False",
-        },
-        "weak_crypto": {
-            "patterns": [
-                r"md5\s*\(",
-                r"sha1\s*\(",
-                r"DES\s*\(",
-                r"RC4\s*\(",
-            ],
-            "severity": ThreatSeverity.HIGH,
-            "remediation": "Use SHA256 or stronger algorithms",
-        },
-        "unsafe_eval": {
-            "patterns": [
-                r"\beval\s*\(",
-                r"\bexec\s*\(",
-                r"__import__\s*\(",
-            ],
-            "severity": ThreatSeverity.CRITICAL,
-            "remediation": "Replace eval with safer alternatives",
-        },
-    }
-
-    SECRET_PATTERNS = {
-        "api_key": r"['\"]?(api[_-]?key|apikey)['\"]?\s*[:=]\s*['\"][\w\-]{20,}['\"]",
-        "password": r"['\"]?(password|passwd)['\"]?\s*[:=]\s*['\"][\w!@#$%^&*]{8,}['\"]",
-        "aws_key": r"AKIA[0-9A-Z]{16}",
-        "private_key": r"-----BEGIN (RSA|EC|DSA|OPENSSH|PGP) PRIVATE KEY",
-    }
+    """Detects security threats in code using unified security patterns."""
 
     def __init__(self):
-        """Initialize threat detector."""
+        """Initialize threat detector with unified patterns."""
         self.detected_threats = []
+        # Use shared patterns
+        self.vulnerability_patterns = SecurityPatterns.VULNERABILITY_PATTERNS
+        self.secret_patterns = SecurityPatterns.SECRET_PATTERNS
 
     async def detect_code_vulnerabilities(
         self, code: str, language: str = "python"
     ) -> List[Threat]:
-        """Detect code vulnerabilities."""
+        """Detect code vulnerabilities using shared patterns."""
         threats = []
         lines = code.split("\n")
 
-        for category, config in self.VULNERABILITY_PATTERNS.items():
+        for category, config in self.vulnerability_patterns.items():
             for pattern in config["patterns"]:
                 for line_num, line in enumerate(lines, 1):
                     if re.search(pattern, line, re.IGNORECASE):
                         threats.append(
                             Threat(
-                                severity=config["severity"],
+                                severity=ThreatSeverity.from_security_level(config["severity"]),
                                 category=category,
                                 description=f"Potential {category} detected",
                                 line=line_num,
                                 pattern=pattern,
-                                confidence=0.85,
+                                confidence=config["confidence"],
                                 remediation=config["remediation"],
                             )
                         )
@@ -130,13 +81,16 @@ class ThreatDetector:
         return threats
 
     async def detect_secrets(self, code: str) -> List[Threat]:
-        """Detect hardcoded secrets."""
+        """Detect hardcoded secrets using shared patterns."""
         threats = []
         lines = code.split("\n")
 
-        for secret_type, pattern in self.SECRET_PATTERNS.items():
+        for secret_type, config in self.secret_patterns.items():
+            pattern = config["pattern"] if isinstance(config, dict) else config
             for line_num, line in enumerate(lines, 1):
                 if re.search(pattern, line):
+                    # Get config details
+                    config_dict = config if isinstance(config, dict) else {}
                     threats.append(
                         Threat(
                             severity=ThreatSeverity.CRITICAL,
@@ -144,8 +98,8 @@ class ThreatDetector:
                             description=f"Hardcoded {secret_type} detected",
                             line=line_num,
                             pattern=pattern,
-                            confidence=0.95,
-                            remediation="Remove and use environment variables",
+                            confidence=config_dict.get("confidence", 0.95),
+                            remediation=config_dict.get("remediation", "Remove and use environment variables"),
                         )
                     )
 

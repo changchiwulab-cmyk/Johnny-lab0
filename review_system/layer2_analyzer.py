@@ -7,6 +7,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 from enum import Enum
+from shared.security_patterns import SecurityPatterns, SecurityLevel
 
 
 class RiskLevel(Enum):
@@ -235,47 +236,11 @@ class ComplexityAnalyzer:
 
 
 class SecurityAnalyzer:
-    """Detects security vulnerabilities in code."""
+    """Detects security vulnerabilities in code using shared patterns."""
 
-    SECURITY_PATTERNS = {
-        "hardcoded_secrets": {
-            "patterns": [
-                r"password\s*=\s*['\"][\w@]+['\"]",
-                r"api_key\s*=\s*['\"][\w\-]+['\"]",
-                r"secret\s*=\s*['\"][\w\-]+['\"]",
-            ],
-            "severity": RiskLevel.CRITICAL,
-            "confidence": 0.95,
-        },
-        "sql_injection": {
-            "patterns": [
-                r"sql\s*=\s*.*\+.*",
-                r"query\s*=\s*.*f['\"].*\{",
-                r"execute\s*\(\s*.*\+",
-            ],
-            "severity": RiskLevel.HIGH,
-            "confidence": 0.85,
-        },
-        "unsafe_eval": {
-            "patterns": [
-                r"\beval\s*\(",
-                r"exec\s*\(",
-                r"__import__\s*\(",
-            ],
-            "severity": RiskLevel.CRITICAL,
-            "confidence": 0.98,
-        },
-        "weak_crypto": {
-            "patterns": [
-                r"md5\s*\(",
-                r"sha1\s*\(",
-                r"DES\s*\(",
-                r"RC4\s*\(",
-            ],
-            "severity": RiskLevel.HIGH,
-            "confidence": 0.90,
-        },
-    }
+    def __init__(self):
+        """Initialize with unified security patterns."""
+        self.vulnerability_patterns = SecurityPatterns.VULNERABILITY_PATTERNS
 
     async def scan_all(self, code_changes: Dict[str, str]) -> SecurityReport:
         """Scan all code changes for security issues."""
@@ -312,13 +277,22 @@ class SecurityAnalyzer:
         findings = []
         lines = content.split("\n")
 
-        for category, config in self.SECURITY_PATTERNS.items():
+        for category, config in self.vulnerability_patterns.items():
             for pattern in config["patterns"]:
                 for line_num, line in enumerate(lines, 1):
                     if re.search(pattern, line, re.IGNORECASE):
+                        # Convert SecurityLevel to RiskLevel
+                        severity_map = {
+                            SecurityLevel.CRITICAL: RiskLevel.CRITICAL,
+                            SecurityLevel.HIGH: RiskLevel.HIGH,
+                            SecurityLevel.MEDIUM: RiskLevel.MEDIUM,
+                            SecurityLevel.LOW: RiskLevel.LOW,
+                        }
+                        risk_level = severity_map.get(config["severity"], RiskLevel.MEDIUM)
+
                         findings.append(
                             SecurityFinding(
-                                severity=config["severity"],
+                                severity=risk_level,
                                 category=category,
                                 description=f"Potential {category} vulnerability detected",
                                 line=line_num,
