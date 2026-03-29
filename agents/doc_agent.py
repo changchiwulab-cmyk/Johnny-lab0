@@ -22,7 +22,7 @@ Output ONLY the documentation, no code."""
 
         super().__init__(name="doc_agent", system_prompt=system_prompt)
 
-    def execute(self, subtask: str) -> str:
+    async def execute(self, subtask: str) -> str:
         """
         Generate documentation for the given code/task.
 
@@ -45,5 +45,5 @@ Requirements:
 - Use proper markdown formatting
 - Make it accessible to developers of all levels"""
 
-        documentation = self._call_claude(prompt, max_tokens=4096)
+        documentation = await self._call_claude(prompt, max_tokens=4096)
         return documentation

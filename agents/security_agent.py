@@ -23,7 +23,7 @@ Output a detailed security report with findings and recommendations."""
 
         super().__init__(name="security_agent", system_prompt=system_prompt)
 
-    def execute(self, subtask: str) -> str:
+    async def execute(self, subtask: str) -> str:
         """
         Perform security scan on the given code/task.
 
@@ -50,5 +50,5 @@ Requirements:
 - Provide risk severity levels (critical, high, medium, low)
 - Recommend specific fixes for each issue"""
 
-        security_report = self._call_claude(prompt, max_tokens=4096)
+        security_report = await self._call_claude(prompt, max_tokens=4096)
         return security_report

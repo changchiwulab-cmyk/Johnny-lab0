@@ -129,11 +129,8 @@ class OrchestratorAgent:
             if not agent:
                 return task_id, f"Error: Unknown agent type {agent_type}"
 
-            # Run agent in a thread pool to avoid blocking
-            loop = asyncio.get_event_loop()
-            output = await loop.run_in_executor(
-                None, agent.execute, task_desc
-            )
+            # Call async agent directly (now using AsyncAnthropic)
+            output = await agent.execute(task_desc)
             return task_id, output
 
         except Exception as e:

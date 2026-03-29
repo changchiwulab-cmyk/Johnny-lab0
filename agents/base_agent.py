@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
 import os
-from anthropic import Anthropic
+from anthropic import AsyncAnthropic
 
 
 class BaseAgent(ABC):
@@ -19,13 +19,13 @@ class BaseAgent(ABC):
         """
         self.name = name
         self.system_prompt = system_prompt
-        self.client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        self.client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
         self.model = "claude-opus-4-6"
 
     @abstractmethod
-    def execute(self, subtask: str) -> str:
+    async def execute(self, subtask: str) -> str:
         """
-        Execute the subtask using Claude.
+        Execute the subtask using Claude asynchronously.
 
         Args:
             subtask: Task description
@@ -35,9 +35,9 @@ class BaseAgent(ABC):
         """
         pass
 
-    def _call_claude(self, user_message: str, max_tokens: int = 2048) -> str:
+    async def _call_claude(self, user_message: str, max_tokens: int = 2048) -> str:
         """
-        Call Claude API with error handling and retry logic.
+        Call Claude API asynchronously with error handling and retry logic.
 
         Args:
             user_message: User's request
@@ -47,7 +47,7 @@ class BaseAgent(ABC):
             Claude's response text
         """
         try:
-            message = self.client.messages.create(
+            message = await self.client.messages.create(
                 model=self.model,
                 max_tokens=max_tokens,
                 system=self.system_prompt,

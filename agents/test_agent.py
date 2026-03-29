@@ -22,7 +22,7 @@ Output ONLY the test code, no explanations."""
 
         super().__init__(name="test_agent", system_prompt=system_prompt)
 
-    def execute(self, subtask: str) -> str:
+    async def execute(self, subtask: str) -> str:
         """
         Generate tests for the given code/task.
 
@@ -45,5 +45,5 @@ Requirements:
 - Use clear, descriptive test names
 - Include assertions and expected behavior"""
 
-        tests = self._call_claude(prompt, max_tokens=4096)
+        tests = await self._call_claude(prompt, max_tokens=4096)
         return tests

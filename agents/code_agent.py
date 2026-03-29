@@ -22,7 +22,7 @@ Output ONLY the code, no explanations."""
 
         super().__init__(name="code_agent", system_prompt=system_prompt)
 
-    def execute(self, subtask: str) -> str:
+    async def execute(self, subtask: str) -> str:
         """
         Generate code for the given task.
 
@@ -42,5 +42,5 @@ Requirements:
 - Make it testable
 - Use clear naming conventions"""
 
-        code = self._call_claude(prompt, max_tokens=4096)
+        code = await self._call_claude(prompt, max_tokens=4096)
         return code
