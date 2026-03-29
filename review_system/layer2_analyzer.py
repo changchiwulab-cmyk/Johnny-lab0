@@ -2,12 +2,11 @@
 
 import asyncio
 import re
-import subprocess
-import json
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 from enum import Enum
 from shared.security_patterns import SecurityPatterns, SecurityLevel
+from shared.subprocess_utils import SubprocessRunner
 
 
 class RiskLevel(Enum):
@@ -191,46 +190,36 @@ class ComplexityAnalyzer:
 
     async def _calculate_cyclomatic(self, files: List[str]) -> float:
         """Calculate average cyclomatic complexity."""
-        try:
-            result = subprocess.run(
-                ["radon", "cc"] + files + ["--average"],
-                capture_output=True,
-                timeout=15,
-                text=True,
-            )
-            # Parse radon output
-            if result.stdout:
-                lines = result.stdout.strip().split("\n")
-                for line in lines:
-                    if "Average complexity" in line:
-                        # Extract value
-                        match = re.search(r"([\d.]+)", line)
-                        if match:
-                            return float(match.group(1))
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            pass
+        result = await SubprocessRunner.run_with_text_output(
+            ["radon", "cc"] + files + ["--average"],
+            timeout=15,
+        )
+
+        if result:
+            lines = result.strip().split("\n")
+            for line in lines:
+                if "Average complexity" in line:
+                    # Extract value
+                    match = re.search(r"([\d.]+)", line)
+                    if match:
+                        return float(match.group(1))
 
         return 5.0  # Default
 
     async def _calculate_cognitive(self, files: List[str]) -> float:
         """Calculate average cognitive complexity."""
-        try:
-            result = subprocess.run(
-                ["radon", "mi"] + files + ["-s"],
-                capture_output=True,
-                timeout=15,
-                text=True,
-            )
-            # Cognitive complexity is related to maintainability index
-            if result.stdout:
-                # Extract maintainability index
-                match = re.search(r"Maintainability Index: ([\d.]+)", result.stdout)
-                if match:
-                    mi = float(match.group(1))
-                    # Convert MI to cognitive complexity estimate
-                    return max(1.0, (100.0 - mi) / 5.0)
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            pass
+        result = await SubprocessRunner.run_with_text_output(
+            ["radon", "mi"] + files + ["-s"],
+            timeout=15,
+        )
+
+        if result:
+            # Extract maintainability index
+            match = re.search(r"Maintainability Index: ([\d.]+)", result)
+            if match:
+                mi = float(match.group(1))
+                # Convert MI to cognitive complexity estimate
+                return max(1.0, (100.0 - mi) / 5.0)
 
         return 10.0  # Default
 
@@ -407,59 +396,47 @@ class DependencyAuditor:
     async def _audit_npm(self, project_root: str) -> List[Vulnerability]:
         """Audit Node.js dependencies with npm audit."""
         vulnerabilities = []
-        try:
-            result = subprocess.run(
-                ["npm", "audit", "--json"],
-                cwd=project_root,
-                capture_output=True,
-                timeout=30,
-                text=True,
-            )
-            if result.stdout:
-                audit_data = json.loads(result.stdout)
-                for vuln_key, vuln_data in audit_data.get("vulnerabilities", {}).items():
-                    severity_map = {"critical": RiskLevel.CRITICAL, "high": RiskLevel.HIGH}
-                    vulnerabilities.append(
-                        Vulnerability(
-                            package=vuln_key,
-                            version=vuln_data.get("installed", ""),
-                            vulnerable_version=vuln_data.get("range", ""),
-                            severity=severity_map.get(vuln_data.get("severity"), RiskLevel.MEDIUM),
-                            cve_id=vuln_data.get("cves", [""])[0] if vuln_data.get("cves") else "",
-                            description=vuln_data.get("title", ""),
-                        )
+        audit_data = await SubprocessRunner.run_with_json_output(
+            ["npm", "audit", "--json"],
+            tool_name="npm",
+        )
+
+        if audit_data:
+            for vuln_key, vuln_data in audit_data.get("vulnerabilities", {}).items():
+                severity_map = {"critical": RiskLevel.CRITICAL, "high": RiskLevel.HIGH}
+                vulnerabilities.append(
+                    Vulnerability(
+                        package=vuln_key,
+                        version=vuln_data.get("installed", ""),
+                        vulnerable_version=vuln_data.get("range", ""),
+                        severity=severity_map.get(vuln_data.get("severity"), RiskLevel.MEDIUM),
+                        cve_id=vuln_data.get("cves", [""])[0] if vuln_data.get("cves") else "",
+                        description=vuln_data.get("title", ""),
                     )
-        except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError):
-            pass
+                )
 
         return vulnerabilities
 
     async def _audit_pip(self, project_root: str) -> List[Vulnerability]:
         """Audit Python dependencies with pip audit."""
         vulnerabilities = []
-        try:
-            result = subprocess.run(
-                ["pip-audit", "--format", "json"],
-                cwd=project_root,
-                capture_output=True,
-                timeout=30,
-                text=True,
-            )
-            if result.stdout:
-                audit_data = json.loads(result.stdout)
-                for vuln in audit_data.get("vulnerabilities", []):
-                    vulnerabilities.append(
-                        Vulnerability(
-                            package=vuln.get("name", ""),
-                            version=vuln.get("installed", ""),
-                            vulnerable_version=vuln.get("version", ""),
-                            severity=RiskLevel.HIGH,
-                            cve_id=vuln.get("cve", ""),
-                            description=vuln.get("description", ""),
-                        )
+        audit_data = await SubprocessRunner.run_with_json_output(
+            ["pip-audit", "--format", "json"],
+            tool_name="pip",
+        )
+
+        if audit_data:
+            for vuln in audit_data.get("vulnerabilities", []):
+                vulnerabilities.append(
+                    Vulnerability(
+                        package=vuln.get("name", ""),
+                        version=vuln.get("installed", ""),
+                        vulnerable_version=vuln.get("version", ""),
+                        severity=RiskLevel.HIGH,
+                        cve_id=vuln.get("cve", ""),
+                        description=vuln.get("description", ""),
                     )
-        except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError):
-            pass
+                )
 
         return vulnerabilities
 
