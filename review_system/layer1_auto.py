@@ -1,11 +1,10 @@
 """Layer 1: Automated formatting, linting, and type checking."""
 
 import asyncio
-import json
-import subprocess
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set
 from enum import Enum
+from shared.subprocess_utils import SubprocessRunner, ToolIntegration
 
 
 class IssueSeverity(Enum):
@@ -129,30 +128,19 @@ class AutoFormatter:
 
     async def _format_python(self, file_path: str, content: str) -> bool:
         """Format Python file with black."""
-        try:
-            # Check if black is available
-            result = subprocess.run(
-                ["black", "--check", file_path],
-                capture_output=True,
-                timeout=10,
-                text=True,
-            )
-            return result.returncode == 0
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            return True  # Skip if tool not available
+        result = await SubprocessRunner.run_command(
+            ["black", "--check", file_path],
+            tool_name="black",
+        )
+        return result.get("success", False) if result else True
 
     async def _format_javascript(self, file_path: str, content: str) -> bool:
         """Format JavaScript/TypeScript file with prettier."""
-        try:
-            result = subprocess.run(
-                ["prettier", "--check", file_path],
-                capture_output=True,
-                timeout=10,
-                text=True,
-            )
-            return result.returncode == 0
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            return True  # Skip if tool not available
+        result = await SubprocessRunner.run_command(
+            ["prettier", "--check", file_path],
+            timeout=10,
+        )
+        return result.get("success", False) if result else True
 
 
 class LinterManager:
@@ -190,63 +178,50 @@ class LinterManager:
     async def _lint_python(self, file_path: str) -> List[LintIssue]:
         """Run flake8 on Python file."""
         issues = []
-        try:
-            result = subprocess.run(
-                ["flake8", file_path, "--format=json"],
-                capture_output=True,
-                timeout=10,
-                text=True,
-            )
-            if result.stdout:
-                flake8_issues = json.loads(result.stdout)
-                for issue in flake8_issues:
-                    issues.append(
-                        LintIssue(
-                            file=issue.get("filename", file_path),
-                            line=issue.get("line_number", 0),
-                            column=issue.get("column_number", 0),
-                            severity=IssueSeverity.WARNING,
-                            rule=issue.get("type", ""),
-                            message=issue.get("text", ""),
-                            source="flake8",
-                        )
+        flake8_issues = await SubprocessRunner.run_with_json_output(
+            ["flake8", file_path, "--format=json"],
+            tool_name="flake8",
+        )
+
+        if flake8_issues:
+            for issue in flake8_issues:
+                issues.append(
+                    LintIssue(
+                        file=issue.get("filename", file_path),
+                        line=issue.get("line_number", 0),
+                        column=issue.get("column_number", 0),
+                        severity=IssueSeverity.WARNING,
+                        rule=issue.get("type", ""),
+                        message=issue.get("text", ""),
+                        source="flake8",
                     )
-        except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError):
-            pass
+                )
 
         return issues
 
     async def _lint_javascript(self, file_path: str) -> List[LintIssue]:
         """Run eslint on JavaScript/TypeScript file."""
         issues = []
-        try:
-            result = subprocess.run(
-                ["eslint", file_path, "--format=json"],
-                capture_output=True,
-                timeout=10,
-                text=True,
-            )
-            if result.stdout:
-                eslint_results = json.loads(result.stdout)
-                for file_result in eslint_results:
-                    for msg in file_result.get("messages", []):
-                        issues.append(
-                            LintIssue(
-                                file=file_result.get("filePath", file_path),
-                                line=msg.get("line", 0),
-                                column=msg.get("column", 0),
-                                severity=(
-                                    IssueSeverity.ERROR
-                                    if msg.get("severity") == 2
-                                    else IssueSeverity.WARNING
-                                ),
-                                rule=msg.get("ruleId", ""),
-                                message=msg.get("message", ""),
-                                source="eslint",
-                            )
+        eslint_results = await ToolIntegration.run_linter(file_path, tool="eslint")
+
+        if eslint_results:
+            for file_result in eslint_results:
+                for msg in file_result.get("messages", []):
+                    issues.append(
+                        LintIssue(
+                            file=file_result.get("filePath", file_path),
+                            line=msg.get("line", 0),
+                            column=msg.get("column", 0),
+                            severity=(
+                                IssueSeverity.ERROR
+                                if msg.get("severity") == 2
+                                else IssueSeverity.WARNING
+                            ),
+                            rule=msg.get("ruleId", ""),
+                            message=msg.get("message", ""),
+                            source="eslint",
                         )
-        except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError):
-            pass
+                    )
 
         return issues
 
@@ -282,42 +257,30 @@ class TypeChecker:
 
     async def _check_python(self, file_path: str) -> Optional[Dict]:
         """Run mypy on Python file."""
-        try:
-            result = subprocess.run(
-                ["mypy", file_path, "--json"],
-                capture_output=True,
-                timeout=15,
-                text=True,
-            )
-            if result.stdout:
-                mypy_results = json.loads(result.stdout)
-                errors = [r for r in mypy_results if r.get("severity") == "error"]
-                warnings = [r for r in mypy_results if r.get("severity") == "note"]
-                return {
-                    "errors": [e.get("message", "") for e in errors],
-                    "warnings": [w.get("message", "") for w in warnings],
-                }
-        except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError):
-            pass
+        mypy_results = await ToolIntegration.run_type_checker(file_path, tool="mypy")
+
+        if mypy_results:
+            errors = [r for r in mypy_results if r.get("severity") == "error"]
+            warnings = [r for r in mypy_results if r.get("severity") == "note"]
+            return {
+                "errors": [e.get("message", "") for e in errors],
+                "warnings": [w.get("message", "") for w in warnings],
+            }
 
         return None
 
     async def _check_typescript(self, file_path: str) -> Optional[Dict]:
         """Run TypeScript compiler on TypeScript file."""
-        try:
-            result = subprocess.run(
-                ["tsc", "--noEmit", file_path],
-                capture_output=True,
-                timeout=15,
-                text=True,
-            )
-            if result.stderr:
-                return {
-                    "errors": result.stderr.split("\n"),
-                    "warnings": [],
-                }
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            pass
+        result = await SubprocessRunner.run_command(
+            ["tsc", "--noEmit", file_path],
+            timeout=15,
+        )
+
+        if result and result.get("stderr"):
+            return {
+                "errors": result.get("stderr", "").split("\n"),
+                "warnings": [],
+            }
 
         return None
 
@@ -331,32 +294,25 @@ class CoverageValidator:
 
     async def validate(self, test_results: Optional[Dict] = None) -> CoverageResult:
         """Validate coverage from test results."""
-        try:
-            result = subprocess.run(
-                ["pytest", "--cov", "--cov-report=json"],
-                capture_output=True,
-                timeout=30,
-                text=True,
+        cov_data = await SubprocessRunner.run_with_json_output(
+            ["pytest", "--cov", "--cov-report=json"],
+            tool_name="pytest",
+        )
+
+        if cov_data:
+            total_coverage = cov_data.get("totals", {}).get("percent_covered", 0)
+            lines_covered = cov_data.get("totals", {}).get("covered_lines", 0)
+            lines_total = cov_data.get("totals", {}).get("num_statements", 0)
+
+            is_acceptable = total_coverage >= self.minimum_coverage
+
+            return CoverageResult(
+                total_coverage=total_coverage,
+                lines_covered=lines_covered,
+                lines_total=lines_total,
+                is_acceptable=is_acceptable,
+                message=f"Coverage: {total_coverage:.1f}% (target: {self.minimum_coverage}%)",
             )
-
-            if result.stdout and ".coverage" in result.stdout:
-                # Parse coverage JSON
-                cov_data = json.loads(result.stdout)
-                total_coverage = cov_data.get("totals", {}).get("percent_covered", 0)
-                lines_covered = cov_data.get("totals", {}).get("covered_lines", 0)
-                lines_total = cov_data.get("totals", {}).get("num_statements", 0)
-
-                is_acceptable = total_coverage >= self.minimum_coverage
-
-                return CoverageResult(
-                    total_coverage=total_coverage,
-                    lines_covered=lines_covered,
-                    lines_total=lines_total,
-                    is_acceptable=is_acceptable,
-                    message=f"Coverage: {total_coverage:.1f}% (target: {self.minimum_coverage}%)",
-                )
-        except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError):
-            pass
 
         # Default to acceptable if tools not available
         return CoverageResult(
