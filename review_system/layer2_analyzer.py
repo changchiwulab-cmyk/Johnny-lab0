@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple
 from enum import Enum
 from shared.security_patterns import SecurityPatterns, SecurityLevel
 from shared.subprocess_utils import SubprocessRunner
+from config_manager.models import ReviewConfig, ComplexityConfig
 
 
 class RiskLevel(Enum):
@@ -137,10 +138,14 @@ class Layer2Report:
 class ComplexityAnalyzer:
     """Analyzes code complexity metrics."""
 
-    def __init__(self, cyclomatic_threshold: float = 10.0, cognitive_threshold: float = 15.0):
-        """Initialize with complexity thresholds."""
-        self.cyclomatic_threshold = cyclomatic_threshold
-        self.cognitive_threshold = cognitive_threshold
+    def __init__(self, config: Optional[ComplexityConfig] = None):
+        """Initialize with config or defaults."""
+        if config:
+            self.cyclomatic_threshold = config.cyclomatic_max
+            self.cognitive_threshold = config.cognitive_max
+        else:
+            self.cyclomatic_threshold = 10.0
+            self.cognitive_threshold = 15.0
 
     async def analyze_all(self, code_changes: Dict[str, str]) -> ComplexityMetrics:
         """Analyze complexity of all code changes."""
@@ -444,9 +449,14 @@ class DependencyAuditor:
 class Layer2Executor:
     """Orchestrates Layer 2 anomaly detection."""
 
-    def __init__(self):
-        """Initialize all Layer 2 components."""
-        self.complexity_analyzer = ComplexityAnalyzer()
+    def __init__(self, config: Optional[ReviewConfig] = None):
+        """Initialize with optional configuration."""
+        self.config = config
+
+        # Use config for complexity thresholds if provided
+        complexity_config = config.layer2.complexity if config else None
+        self.complexity_analyzer = ComplexityAnalyzer(complexity_config)
+
         self.security_analyzer = SecurityAnalyzer()
         self.performance_analyzer = PerformanceAnalyzer()
         self.dependency_auditor = DependencyAuditor()

@@ -16,13 +16,17 @@ from review_system import (
     Layer3Executor,
     ApprovalRequest,
 )
+from config_manager import get_config
 
 
 class OrchestratorAgent:
     """Orchestrates multiple specialized agents for complex task execution."""
 
     def __init__(self):
-        """Initialize orchestrator with all available agents and review system."""
+        """Initialize orchestrator with config-driven review system."""
+        # Load global configuration
+        self.config = get_config()
+
         self.decomposer = TaskDecomposer()
         self.agents = {
             "code_agent": CodeAgent(),
@@ -30,10 +34,11 @@ class OrchestratorAgent:
             "doc_agent": DocAgent(),
             "security_agent": SecurityAgent(),
         }
-        # Initialize three-layer review system
-        self.layer1_executor = Layer1Executor()
-        self.layer2_executor = Layer2Executor()
-        self.layer3_executor = Layer3Executor()
+        # Initialize three-layer review system with config
+        review_config = self.config.get_review_config()
+        self.layer1_executor = Layer1Executor(config=review_config)
+        self.layer2_executor = Layer2Executor(config=review_config)
+        self.layer3_executor = Layer3Executor(config=review_config)
         self.execution_history = []
         self.review_reports = {}
 

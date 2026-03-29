@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set
 from enum import Enum
 from shared.subprocess_utils import SubprocessRunner, ToolIntegration
+from config_manager.models import ReviewConfig, CoverageConfig
 
 
 class IssueSeverity(Enum):
@@ -288,9 +289,14 @@ class TypeChecker:
 class CoverageValidator:
     """Validates test coverage meets requirements."""
 
-    def __init__(self, minimum_coverage: float = 85.0):
-        """Initialize with minimum coverage threshold."""
-        self.minimum_coverage = minimum_coverage
+    def __init__(self, config: Optional[CoverageConfig] = None):
+        """Initialize with config or use defaults."""
+        if config:
+            self.minimum_coverage = config.minimum_percentage
+            self.fail_under = config.fail_under
+        else:
+            self.minimum_coverage = 85.0
+            self.fail_under = 70.0
 
     async def validate(self, test_results: Optional[Dict] = None) -> CoverageResult:
         """Validate coverage from test results."""
@@ -327,12 +333,16 @@ class CoverageValidator:
 class Layer1Executor:
     """Orchestrates Layer 1 automated checks."""
 
-    def __init__(self):
-        """Initialize all Layer 1 components."""
+    def __init__(self, config: Optional[ReviewConfig] = None):
+        """Initialize with optional configuration."""
+        self.config = config
         self.formatter = AutoFormatter()
         self.linter = LinterManager()
         self.type_checker = TypeChecker()
-        self.coverage_validator = CoverageValidator()
+
+        # Use config for coverage if provided
+        coverage_config = config.layer1.coverage if config else None
+        self.coverage_validator = CoverageValidator(coverage_config)
 
     async def execute(self, code_changes: Dict[str, str]) -> Layer1Report:
         """Run all Layer 1 checks in parallel."""
