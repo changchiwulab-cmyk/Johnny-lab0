@@ -1,103 +1,18 @@
 """Layer 1: Automated formatting, linting, and type checking."""
 
 import asyncio
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set
-from enum import Enum
+from typing import Dict, List, Optional
+from shared.result_models import (
+    CheckResult, Issue, IssueSeverity, Layer1Report
+)
 from shared.subprocess_utils import SubprocessRunner, ToolIntegration
 from config_manager.models import ReviewConfig, CoverageConfig
-
-
-class IssueSeverity(Enum):
-    """Issue severity levels."""
-    INFO = "info"
-    WARNING = "warning"
-    ERROR = "error"
-
-
-@dataclass
-class LintIssue:
-    """Represents a linting issue."""
-    file: str
-    line: int
-    column: int
-    severity: IssueSeverity
-    rule: str
-    message: str
-    source: str  # Tool name (flake8, eslint, etc.)
-
-
-@dataclass
-class FormatResult:
-    """Result of formatting operation."""
-    formatted: bool
-    files_modified: int
-    files_failed: int
-    errors: List[str] = field(default_factory=list)
-
-
-@dataclass
-class LintResult:
-    """Result of linting operation."""
-    issues: List[LintIssue]
-    total_issues: int
-    error_count: int
-    warning_count: int
-
-
-@dataclass
-class TypeCheckResult:
-    """Result of type checking."""
-    has_errors: bool
-    errors: List[str]
-    warnings: List[str]
-
-
-@dataclass
-class CoverageResult:
-    """Result of coverage validation."""
-    total_coverage: float
-    lines_covered: int
-    lines_total: int
-    is_acceptable: bool
-    message: str
-
-
-@dataclass
-class Layer1Report:
-    """Combined Layer 1 review report."""
-    formatted: FormatResult
-    linted: LintResult
-    type_checked: TypeCheckResult
-    coverage: CoverageResult
-    status: str  # "pass", "warning", "fail"
-
-    @classmethod
-    def synthesize(cls, results: tuple) -> "Layer1Report":
-        """Synthesize individual results into report."""
-        formatted, linted, type_checked, coverage = results
-
-        # Determine overall status
-        if formatted.files_failed > 0 or type_checked.has_errors or not coverage.is_acceptable:
-            status = "fail"
-        elif linted.error_count > 0:
-            status = "warning"
-        else:
-            status = "pass"
-
-        return cls(
-            formatted=formatted,
-            linted=linted,
-            type_checked=type_checked,
-            coverage=coverage,
-            status=status,
-        )
 
 
 class AutoFormatter:
     """Handles code formatting with multiple tools."""
 
-    async def format_all(self, code_changes: Dict[str, str]) -> FormatResult:
+    async def format_all(self, code_changes: Dict[str, str]) -> CheckResult:
         """Format all changed files."""
         formatted = 0
         failed = 0
@@ -120,8 +35,9 @@ class AutoFormatter:
                 failed += 1
                 errors.append(f"Error formatting {file_path}: {str(e)}")
 
-        return FormatResult(
-            formatted=formatted > 0,
+        return CheckResult(
+            check_type="format",
+            success=formatted > 0,
             files_modified=formatted,
             files_failed=failed,
             errors=errors,
@@ -147,9 +63,9 @@ class AutoFormatter:
 class LinterManager:
     """Manages linting across multiple tools and languages."""
 
-    async def lint_all(self, code_changes: Dict[str, str]) -> LintResult:
+    async def lint_all(self, code_changes: Dict[str, str]) -> CheckResult:
         """Run all applicable linters."""
-        all_issues: List[LintIssue] = []
+        all_issues: List[Issue] = []
 
         for file_path in code_changes.keys():
             try:
@@ -169,14 +85,15 @@ class LinterManager:
         errors = [i for i in all_issues if i.severity == IssueSeverity.ERROR]
         warnings = [i for i in all_issues if i.severity == IssueSeverity.WARNING]
 
-        return LintResult(
+        return CheckResult(
+            check_type="lint",
+            success=len(errors) == 0,
             issues=all_issues,
-            total_issues=len(all_issues),
             error_count=len(errors),
             warning_count=len(warnings),
         )
 
-    async def _lint_python(self, file_path: str) -> List[LintIssue]:
+    async def _lint_python(self, file_path: str) -> List[Issue]:
         """Run flake8 on Python file."""
         issues = []
         flake8_issues = await SubprocessRunner.run_with_json_output(
@@ -187,12 +104,12 @@ class LinterManager:
         if flake8_issues:
             for issue in flake8_issues:
                 issues.append(
-                    LintIssue(
+                    Issue(
                         file=issue.get("filename", file_path),
                         line=issue.get("line_number", 0),
                         column=issue.get("column_number", 0),
                         severity=IssueSeverity.WARNING,
-                        rule=issue.get("type", ""),
+                        rule_id=issue.get("type", ""),
                         message=issue.get("text", ""),
                         source="flake8",
                     )
@@ -200,7 +117,7 @@ class LinterManager:
 
         return issues
 
-    async def _lint_javascript(self, file_path: str) -> List[LintIssue]:
+    async def _lint_javascript(self, file_path: str) -> List[Issue]:
         """Run eslint on JavaScript/TypeScript file."""
         issues = []
         eslint_results = await ToolIntegration.run_linter(file_path, tool="eslint")
@@ -209,7 +126,7 @@ class LinterManager:
             for file_result in eslint_results:
                 for msg in file_result.get("messages", []):
                     issues.append(
-                        LintIssue(
+                        Issue(
                             file=file_result.get("filePath", file_path),
                             line=msg.get("line", 0),
                             column=msg.get("column", 0),
@@ -218,7 +135,7 @@ class LinterManager:
                                 if msg.get("severity") == 2
                                 else IssueSeverity.WARNING
                             ),
-                            rule=msg.get("ruleId", ""),
+                            rule_id=msg.get("ruleId", ""),
                             message=msg.get("message", ""),
                             source="eslint",
                         )
@@ -230,7 +147,7 @@ class LinterManager:
 class TypeChecker:
     """Manages type checking for multiple languages."""
 
-    async def check_all(self, code_changes: Dict[str, str]) -> TypeCheckResult:
+    async def check_all(self, code_changes: Dict[str, str]) -> CheckResult:
         """Run type checking on all files."""
         errors = []
         warnings = []
@@ -250,10 +167,11 @@ class TypeChecker:
             except Exception:
                 pass
 
-        return TypeCheckResult(
-            has_errors=len(errors) > 0,
+        return CheckResult(
+            check_type="type",
+            success=len(errors) == 0,
+            error_count=len(errors),
             errors=errors,
-            warnings=warnings,
         )
 
     async def _check_python(self, file_path: str) -> Optional[Dict]:
@@ -298,7 +216,7 @@ class CoverageValidator:
             self.minimum_coverage = 85.0
             self.fail_under = 70.0
 
-    async def validate(self, test_results: Optional[Dict] = None) -> CoverageResult:
+    async def validate(self, test_results: Optional[Dict] = None) -> CheckResult:
         """Validate coverage from test results."""
         cov_data = await SubprocessRunner.run_with_json_output(
             ["pytest", "--cov", "--cov-report=json"],
@@ -312,7 +230,9 @@ class CoverageValidator:
 
             is_acceptable = total_coverage >= self.minimum_coverage
 
-            return CoverageResult(
+            return CheckResult(
+                check_type="coverage",
+                success=is_acceptable,
                 total_coverage=total_coverage,
                 lines_covered=lines_covered,
                 lines_total=lines_total,
@@ -321,7 +241,9 @@ class CoverageValidator:
             )
 
         # Default to acceptable if tools not available
-        return CoverageResult(
+        return CheckResult(
+            check_type="coverage",
+            success=True,
             total_coverage=100.0,
             lines_covered=0,
             lines_total=0,
