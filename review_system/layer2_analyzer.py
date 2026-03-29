@@ -2,137 +2,13 @@
 
 import asyncio
 import re
-from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
-from enum import Enum
+from shared.result_models import (
+    AnalysisReport, Finding, Metric, RiskLevel, Layer2Report
+)
 from shared.security_patterns import SecurityPatterns, SecurityLevel
 from shared.subprocess_utils import SubprocessRunner
 from config_manager.models import ReviewConfig, ComplexityConfig
-
-
-class RiskLevel(Enum):
-    """Risk levels for detected anomalies."""
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    CRITICAL = "critical"
-
-
-@dataclass
-class CodeMetric:
-    """Represents a code complexity metric."""
-    name: str
-    value: float
-    threshold: float
-    is_exceeded: bool
-
-
-@dataclass
-class ComplexityMetrics:
-    """Complexity metrics for code."""
-    cyclomatic: CodeMetric
-    cognitive: CodeMetric
-    functions_over_threshold: List[str] = field(default_factory=list)
-    overall_risk: RiskLevel = RiskLevel.LOW
-
-
-@dataclass
-class SecurityFinding:
-    """Represents a security vulnerability finding."""
-    severity: RiskLevel
-    category: str
-    description: str
-    line: Optional[int]
-    pattern: str
-    confidence: float  # 0.0-1.0
-
-
-@dataclass
-class SecurityReport:
-    """Security analysis report."""
-    findings: List[SecurityFinding]
-    total_issues: int
-    critical_count: int
-    high_count: int
-    overall_risk: RiskLevel = RiskLevel.LOW
-
-
-@dataclass
-class PerformanceIssue:
-    """Represents a performance issue."""
-    type: str
-    location: str
-    description: str
-    severity: RiskLevel
-
-
-@dataclass
-class PerformanceReport:
-    """Performance analysis report."""
-    issues: List[PerformanceIssue]
-    total_issues: int
-    overall_risk: RiskLevel = RiskLevel.LOW
-
-
-@dataclass
-class Vulnerability:
-    """Dependency vulnerability."""
-    package: str
-    version: str
-    vulnerable_version: str
-    severity: RiskLevel
-    cve_id: str
-    description: str
-
-
-@dataclass
-class DependencyAuditReport:
-    """Dependency audit report."""
-    vulnerabilities: List[Vulnerability]
-    total_issues: int
-    critical_count: int
-    high_count: int
-    overall_risk: RiskLevel = RiskLevel.LOW
-
-
-@dataclass
-class Layer2Report:
-    """Combined Layer 2 anomaly detection report."""
-    complexity: ComplexityMetrics
-    security: SecurityReport
-    performance: PerformanceReport
-    dependencies: DependencyAuditReport
-    status: str  # "pass", "warning", "fail"
-
-    @classmethod
-    def synthesize(cls, results: tuple) -> "Layer2Report":
-        """Synthesize anomaly detection results."""
-        complexity, security, performance, dependencies = results
-
-        # Determine overall status based on risk levels
-        max_risk = max(
-            complexity.overall_risk,
-            security.overall_risk,
-            performance.overall_risk,
-            dependencies.overall_risk,
-            key=lambda r: ["low", "medium", "high", "critical"].index(r.value),
-        )
-
-        if max_risk == RiskLevel.CRITICAL:
-            status = "fail"
-        elif max_risk == RiskLevel.HIGH:
-            status = "warning"
-        else:
-            status = "pass"
-
-        report = cls(
-            complexity=complexity,
-            security=security,
-            performance=performance,
-            dependencies=dependencies,
-            status=status,
-        )
-        return report
 
 
 class ComplexityAnalyzer:
@@ -147,14 +23,19 @@ class ComplexityAnalyzer:
             self.cyclomatic_threshold = 10.0
             self.cognitive_threshold = 15.0
 
-    async def analyze_all(self, code_changes: Dict[str, str]) -> ComplexityMetrics:
+    async def analyze_all(self, code_changes: Dict[str, str]) -> AnalysisReport:
         """Analyze complexity of all code changes."""
         python_files = [f for f in code_changes.keys() if f.endswith(".py")]
 
         if not python_files:
-            return ComplexityMetrics(
-                cyclomatic=CodeMetric("cyclomatic", 0, self.cyclomatic_threshold, False),
-                cognitive=CodeMetric("cognitive", 0, self.cognitive_threshold, False),
+            return AnalysisReport(
+                analysis_type="complexity",
+                total_issues=0,
+                metrics=[
+                    Metric("cyclomatic", 0, self.cyclomatic_threshold, False),
+                    Metric("cognitive", 0, self.cognitive_threshold, False),
+                ],
+                overall_risk=RiskLevel.LOW,
             )
 
         # Use radon for Python complexity analysis
@@ -166,13 +47,13 @@ class ComplexityAnalyzer:
             cyclomatic_avg = 5.0
             cognitive_avg = 10.0
 
-        cyclomatic_metric = CodeMetric(
+        cyclomatic_metric = Metric(
             "cyclomatic",
             cyclomatic_avg,
             self.cyclomatic_threshold,
             cyclomatic_avg > self.cyclomatic_threshold,
         )
-        cognitive_metric = CodeMetric(
+        cognitive_metric = Metric(
             "cognitive",
             cognitive_avg,
             self.cognitive_threshold,
@@ -187,9 +68,10 @@ class ComplexityAnalyzer:
         else:
             risk = RiskLevel.LOW
 
-        return ComplexityMetrics(
-            cyclomatic=cyclomatic_metric,
-            cognitive=cognitive_metric,
+        return AnalysisReport(
+            analysis_type="complexity",
+            total_issues=0,
+            metrics=[cyclomatic_metric, cognitive_metric],
             overall_risk=risk,
         )
 
@@ -236,9 +118,9 @@ class SecurityAnalyzer:
         """Initialize with unified security patterns."""
         self.vulnerability_patterns = SecurityPatterns.VULNERABILITY_PATTERNS
 
-    def scan_all(self, code_changes: Dict[str, str]) -> SecurityReport:
+    def scan_all(self, code_changes: Dict[str, str]) -> AnalysisReport:
         """Scan all code changes for security issues (CPU-bound, synchronous)."""
-        findings: List[SecurityFinding] = []
+        findings: List[Finding] = []
 
         for file_path, content in code_changes.items():
             file_findings = self._scan_content(content, file_path)
@@ -258,7 +140,8 @@ class SecurityAnalyzer:
         else:
             overall_risk = RiskLevel.LOW
 
-        return SecurityReport(
+        return AnalysisReport(
+            analysis_type="security",
             findings=findings,
             total_issues=len(findings),
             critical_count=len(critical),
@@ -266,7 +149,7 @@ class SecurityAnalyzer:
             overall_risk=overall_risk,
         )
 
-    def _scan_content(self, content: str, file_path: str) -> List[SecurityFinding]:
+    def _scan_content(self, content: str, file_path: str) -> List[Finding]:
         """Scan code content for security patterns."""
         findings = []
         lines = content.split("\n")
@@ -285,7 +168,8 @@ class SecurityAnalyzer:
                         risk_level = severity_map.get(config["severity"], RiskLevel.MEDIUM)
 
                         findings.append(
-                            SecurityFinding(
+                            Finding(
+                                finding_type="security",
                                 severity=risk_level,
                                 category=category,
                                 description=f"Potential {category} vulnerability detected",
@@ -301,9 +185,9 @@ class SecurityAnalyzer:
 class PerformanceAnalyzer:
     """Detects performance issues in code."""
 
-    def detect_all(self, code_changes: Dict[str, str]) -> PerformanceReport:
+    def detect_all(self, code_changes: Dict[str, str]) -> AnalysisReport:
         """Detect performance issues in code changes."""
-        issues: List[PerformanceIssue] = []
+        issues: List[Finding] = []
 
         for file_path, content in code_changes.items():
             file_issues = self._detect_patterns(content, file_path)
@@ -317,13 +201,14 @@ class PerformanceAnalyzer:
         else:
             overall_risk = RiskLevel.LOW
 
-        return PerformanceReport(
-            issues=issues,
+        return AnalysisReport(
+            analysis_type="performance",
+            findings=issues,
             total_issues=len(issues),
             overall_risk=overall_risk,
         )
 
-    def _detect_patterns(self, content: str, file_path: str) -> List[PerformanceIssue]:
+    def _detect_patterns(self, content: str, file_path: str) -> List[Finding]:
         """Detect performance anti-patterns."""
         issues = []
         lines = content.split("\n")
@@ -335,11 +220,13 @@ class PerformanceAnalyzer:
                 for j in range(i, min(i + 10, len(lines))):
                     if "+=" in lines[j] and ('"' in lines[j] or "'" in lines[j]):
                         issues.append(
-                            PerformanceIssue(
-                                type="string_concat_in_loop",
-                                location=f"{file_path}:{i}",
-                                description="String concatenation in loop detected (use list.join())",
+                            Finding(
+                                finding_type="performance",
                                 severity=RiskLevel.MEDIUM,
+                                category="string_concat_in_loop",
+                                description="String concatenation in loop detected (use list.join())",
+                                location=f"{file_path}:{i}",
+                                line=i,
                             )
                         )
                         break
@@ -349,11 +236,13 @@ class PerformanceAnalyzer:
                 for j in range(max(0, i - 5), min(i + 5, len(lines))):
                     if ".query(" in lines[j] or ".execute(" in lines[j]:
                         issues.append(
-                            PerformanceIssue(
-                                type="potential_nplus1",
-                                location=f"{file_path}:{i}",
-                                description="Potential N+1 query pattern detected",
+                            Finding(
+                                finding_type="performance",
                                 severity=RiskLevel.HIGH,
+                                category="potential_nplus1",
+                                description="Potential N+1 query pattern detected",
+                                location=f"{file_path}:{i}",
+                                line=i,
                             )
                         )
                         break
@@ -364,9 +253,9 @@ class PerformanceAnalyzer:
 class DependencyAuditor:
     """Audits project dependencies for vulnerabilities."""
 
-    async def audit(self, project_root: str) -> DependencyAuditReport:
+    async def audit(self, project_root: str) -> AnalysisReport:
         """Audit dependencies for vulnerabilities."""
-        vulnerabilities: List[Vulnerability] = []
+        vulnerabilities: List[Finding] = []
 
         # Try npm audit for Node.js dependencies
         npm_vulns = await self._audit_npm(project_root)
@@ -390,15 +279,16 @@ class DependencyAuditor:
         else:
             overall_risk = RiskLevel.LOW
 
-        return DependencyAuditReport(
-            vulnerabilities=vulnerabilities,
+        return AnalysisReport(
+            analysis_type="dependency",
+            findings=vulnerabilities,
             total_issues=len(vulnerabilities),
             critical_count=len(critical),
             high_count=len(high),
             overall_risk=overall_risk,
         )
 
-    async def _audit_npm(self, project_root: str) -> List[Vulnerability]:
+    async def _audit_npm(self, project_root: str) -> List[Finding]:
         """Audit Node.js dependencies with npm audit."""
         vulnerabilities = []
         audit_data = await SubprocessRunner.run_with_json_output(
@@ -410,19 +300,18 @@ class DependencyAuditor:
             for vuln_key, vuln_data in audit_data.get("vulnerabilities", {}).items():
                 severity_map = {"critical": RiskLevel.CRITICAL, "high": RiskLevel.HIGH}
                 vulnerabilities.append(
-                    Vulnerability(
-                        package=vuln_key,
-                        version=vuln_data.get("installed", ""),
-                        vulnerable_version=vuln_data.get("range", ""),
+                    Finding(
+                        finding_type="dependency",
                         severity=severity_map.get(vuln_data.get("severity"), RiskLevel.MEDIUM),
-                        cve_id=vuln_data.get("cves", [""])[0] if vuln_data.get("cves") else "",
+                        category="npm_vulnerability",
                         description=vuln_data.get("title", ""),
+                        cve_id=vuln_data.get("cves", [""])[0] if vuln_data.get("cves") else "",
                     )
                 )
 
         return vulnerabilities
 
-    async def _audit_pip(self, project_root: str) -> List[Vulnerability]:
+    async def _audit_pip(self, project_root: str) -> List[Finding]:
         """Audit Python dependencies with pip audit."""
         vulnerabilities = []
         audit_data = await SubprocessRunner.run_with_json_output(
@@ -433,13 +322,12 @@ class DependencyAuditor:
         if audit_data:
             for vuln in audit_data.get("vulnerabilities", []):
                 vulnerabilities.append(
-                    Vulnerability(
-                        package=vuln.get("name", ""),
-                        version=vuln.get("installed", ""),
-                        vulnerable_version=vuln.get("version", ""),
+                    Finding(
+                        finding_type="dependency",
                         severity=RiskLevel.HIGH,
-                        cve_id=vuln.get("cve", ""),
+                        category="pip_vulnerability",
                         description=vuln.get("description", ""),
+                        cve_id=vuln.get("cve", ""),
                     )
                 )
 
