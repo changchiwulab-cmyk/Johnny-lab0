@@ -1,9 +1,12 @@
 """Unified subprocess execution utilities for consistent tool integration."""
 
 import asyncio
+import logging
 import subprocess
 import json
 from typing import List, Dict, Optional, Callable, Any
+
+logger = logging.getLogger(__name__)
 
 
 class SubprocessRunner:
@@ -46,7 +49,7 @@ class SubprocessRunner:
                 timeout = SubprocessRunner.DEFAULT_TIMEOUT
 
         try:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             result = await asyncio.wait_for(
                 loop.run_in_executor(
                     None,
@@ -85,7 +88,18 @@ class SubprocessRunner:
                 "error": "not_found",
             }
 
+        except OSError as e:
+            logger.warning("OS error running command %s: %s", cmd[0], e)
+            return {
+                "stdout": "",
+                "stderr": str(e),
+                "returncode": -1,
+                "success": False,
+                "error": "os_error",
+            }
+
         except Exception as e:
+            logger.exception("Unexpected error running command %s", cmd[0])
             return {
                 "stdout": "",
                 "stderr": str(e),

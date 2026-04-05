@@ -1,8 +1,11 @@
 """Main orchestrator for multi-agent task execution with integrated review system."""
 
 import asyncio
+import logging
 import networkx as nx
 from typing import Dict, List, Set, Optional
+
+logger = logging.getLogger(__name__)
 from task_decomposer import TaskDecomposer
 from agents.code_agent import CodeAgent
 from agents.test_agent import TestAgent
@@ -85,7 +88,7 @@ class OrchestratorAgent:
         results = {}
 
         for layer in execution_layers:
-            print(f"\n📌 Executing layer: {layer}")
+            logger.info("Executing layer: %s", layer)
 
             # Create tasks for parallel execution
             tasks = []
@@ -155,34 +158,34 @@ class OrchestratorAgent:
         Returns:
             Dictionary containing all three layer reports
         """
-        print("\n🔍 Performing three-layer automated review...")
+        logger.info("Performing three-layer automated review")
 
         code_changes = {"generated.py": code}
         review_results = {}
 
         try:
             # Layer 1: Automated checks (formatting, linting, type checking)
-            print("   Layer 1: Running automated checks...")
+            logger.info("Layer 1: Running automated checks")
             layer1_report = await self.layer1_executor.execute(code_changes)
             review_results["layer1"] = layer1_report
-            print(f"      ✓ Found {layer1_report.total_issues} issues")
+            logger.info("Layer 1 complete: %d issues found", layer1_report.total_issues)
 
             # Layer 2: Anomaly detection (complexity, security, performance)
-            print("   Layer 2: Detecting anomalies...")
+            logger.info("Layer 2: Detecting anomalies")
             layer2_report = await self.layer2_executor.execute(code_changes)
             review_results["layer2"] = layer2_report
-            print(f"      ✓ Risk level: {layer2_report.overall_risk}")
+            logger.info("Layer 2 complete: risk level %s", layer2_report.overall_risk)
 
             # Layer 3: Human approval gates
-            print("   Layer 3: Generating approval requirements...")
+            logger.info("Layer 3: Generating approval requirements")
             approval_req = self.layer3_executor.execute(
                 code, layer1_report, layer2_report
             )
             review_results["layer3"] = approval_req
-            print(f"      ✓ Requires {len(approval_req.required_approvers)} approvers")
+            logger.info("Layer 3 complete: %d approvers required", len(approval_req.required_approvers))
 
         except Exception as e:
-            print(f"   ⚠️  Review failed: {str(e)}")
+            logger.warning("Review failed: %s", e)
             review_results["error"] = str(e)
 
         self.review_reports = review_results
@@ -239,20 +242,20 @@ class OrchestratorAgent:
         Returns:
             Synthesized results with review reports
         """
-        print(f"\n🚀 Starting orchestration for: {task}\n")
+        logger.info("Starting orchestration for: %s", task)
 
         # Step 1: Decompose task
-        print("📊 Decomposing task...")
+        logger.info("Decomposing task")
         dag = self.decompose_task(task)
-        print(f"   Generated {len(dag.nodes())} subtasks")
+        logger.info("Generated %d subtasks", len(dag.nodes()))
 
         # Step 2: Schedule execution
-        print("\n📅 Scheduling execution...")
+        logger.info("Scheduling execution")
         execution_layers = self.schedule_agents(dag)
-        print(f"   Created {len(execution_layers)} execution layers")
+        logger.info("Created %d execution layers", len(execution_layers))
 
         # Step 3: Execute parallel
-        print("\n⚙️ Executing agents in parallel...")
+        logger.info("Executing agents in parallel")
         results = await self.execute_parallel(task, dag, execution_layers)
 
         # Step 4: Perform three-layer review (NEW)
@@ -260,13 +263,13 @@ class OrchestratorAgent:
         if generated_code:
             await self._perform_review(generated_code)
         else:
-            print("\n⚠️  No code generated - skipping review")
+            logger.warning("No code generated - skipping review")
 
         # Step 5: Synthesize results
-        print("\n🔗 Synthesizing results...")
+        logger.info("Synthesizing results")
         final_output = self.synthesize_results(results)
 
-        print("\n✅ Orchestration completed!\n")
+        logger.info("Orchestration completed")
         return final_output
 
 

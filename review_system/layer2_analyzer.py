@@ -20,7 +20,8 @@ class ComplexityAnalyzer:
         優化：實施文件複雜度分析緩存，性能提升 30-60%
         """
         import hashlib
-        self._complexity_cache = {}  # {file_hash: complexity_score}
+        self._complexity_cache: Dict[str, Tuple[float, float]] = {}  # {file_hash: (cyclomatic, cognitive)}
+        self._complexity_cache_max_size = 128
         self._hashlib = hashlib
 
         if config:
@@ -84,7 +85,11 @@ class ComplexityAnalyzer:
                 if isinstance(cognitive_avg, Exception):
                     cognitive_avg = 10.0
 
-                # 為新分析的文件緩存結果
+                # 為新分析的文件緩存結果（淘汰最舊 25% 條目以維持有界大小）
+                if len(self._complexity_cache) >= self._complexity_cache_max_size:
+                    evict_count = self._complexity_cache_max_size // 4
+                    for k in list(self._complexity_cache.keys())[:evict_count]:
+                        del self._complexity_cache[k]
                 for file_path in files_to_analyze:
                     content = code_changes[file_path]
                     file_hash = self._hashlib.sha256(content.encode()).hexdigest()
@@ -494,8 +499,6 @@ class DependencyAuditor:
 
         # 緩存結果
         self._audit_cache[cache_key] = (vulnerabilities, self._time.time())
-        return vulnerabilities
-
         return vulnerabilities
 
 
