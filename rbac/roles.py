@@ -205,7 +205,7 @@ class RoleManager:
             return False
 
         role = cls.ROLES[role_name]
-        valid_updates = {k: v for k, v in updates.items() if hasattr(role, k)}
+        valid_updates = {k: v for k, v in updates.items() if k != "name" and hasattr(role, k)}
         if valid_updates:
             cls.ROLES[role_name] = dataclasses.replace(role, **valid_updates)
         return True
