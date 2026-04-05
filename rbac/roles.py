@@ -199,14 +199,15 @@ class RoleManager:
     @classmethod
     def update_role(cls, role_name: str, updates: dict) -> bool:
         """Update an existing role."""
+        import dataclasses
         cls._ensure_initialized()
         if role_name not in cls.ROLES:
             return False
 
         role = cls.ROLES[role_name]
-        for key, value in updates.items():
-            if hasattr(role, key):
-                setattr(role, key, value)
+        valid_updates = {k: v for k, v in updates.items() if hasattr(role, k)}
+        if valid_updates:
+            cls.ROLES[role_name] = dataclasses.replace(role, **valid_updates)
         return True
 
     @classmethod
